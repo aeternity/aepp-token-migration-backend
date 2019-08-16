@@ -37,17 +37,6 @@ func main() {
 	fmt.Println(tree)
 	fmt.Printf("root hash: %s\n", tree.Root())
 
-	// temp := crypto.Keccak256Hash(
-	// 	[]byte("0x5c1164df5e95d4e8a5f020910babe9ef9aae3408a03db2dec916ad6df45fa8a0"), 
-	// 	[]byte("0xde72b9e5c10a148618a4d55b8cbbab08a63bd3cadcf0aad2300dbd3828b3bd00"))
-
-	// fmt.Printf("temp test 1: %s\n\n", temp.Hex())
-
-	// temp = crypto.Keccak256Hash(
-	// 	[]byte("0xeCDbC12040688f4AB81b5EDF698B1563684A5c33"), 
-	// 	[]byte("896157363220875575296000"))
-	// fmt.Printf("original data hash: %s\n\n", temp.Hex())
-
 	router := chi.NewRouter()
 
 	baseapi.MerkleTreeStatus(router, tree.FullMerkleTree)
@@ -434,13 +423,6 @@ func signBroadcast(tx rlp.Encoder, acc *aeternity.Account, aeNode *aeternity.Nod
 	return hash
 }
 
-// func test(signedTxStr string, aeNode *aeternity.Node) {
-// 	err = aeternity.BroadcastTransaction(aeNode, signedTxStr)
-// 	if err != nil {
-// 		fmt.Printf("[ERROR] Broadcast! %s\n", err)
-// 		return
-// 	}
-// }
 
 func waitForTransaction(aeNode *aeternity.Node, hash string) (height uint64, microblockHash string, err error) {
 	height = getHeight(aeNode)
