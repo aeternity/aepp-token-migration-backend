@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	// "github.com/LimeChain/merkletree"
-	merkletree "ae-token-migration/types"
+	merkletree "aepp-token-migration-backend/types"
 	_ "github.com/lib/pq"
 	"sync"
 )

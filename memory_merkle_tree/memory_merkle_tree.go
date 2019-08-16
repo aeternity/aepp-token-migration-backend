@@ -5,7 +5,8 @@ import (
 	"errors"
 	"fmt"
 	// "github.com/LimeChain/merkletree"
-	merkletree "ae-token-migration/types"
+	merkletree "aepp-token-migration-backend/types"
+	
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"math"

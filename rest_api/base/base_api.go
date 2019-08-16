@@ -5,7 +5,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/LimeChain/merkletree"
+	// "github.com/LimeChain/merkletree"
+	// merkletree "aepp-token-migration-backend/memory_merkle_tree"
+	merkletree "aepp-token-migration-backend/types"
+
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 )

@@ -12,10 +12,10 @@ import (
 	"github.com/go-chi/chi"
 
 	"github.com/joho/godotenv"
-	db "ae-token-migration/postgre_sql"
-	memory "ae-token-migration/memory_merkle_tree"
-	"ae-token-migration/rest_api/validator"
-	"ae-token-migration/rest_api/base"
+	db "aepp-token-migration-backend/postgre_sql"
+	memory "aepp-token-migration-backend/memory_merkle_tree"
+	"aepp-token-migration-backend/rest_api/validator"
+	"aepp-token-migration-backend/rest_api/base"
 
 	// "github.com/ethereum/go-ethereum/crypto"
 	// "github.com/ethereum/go-ethereum/common/hexutil"

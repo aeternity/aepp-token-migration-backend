@@ -2,8 +2,14 @@ package validator
 
 import (
 	"encoding/json"
-	"github.com/LimeChain/merkletree"
-	"github.com/LimeChain/merkletree/restapi/baseapi"
+	
+	// "github.com/LimeChain/merkletree"
+	// merkletree "aepp-token-migration-backend/memory_merkle_tree"
+	merkletree "aepp-token-migration-backend/types"
+	
+	// "github.com/LimeChain/merkletree/restapi/baseapi"
+	baseapi "aepp-token-migration-backend/rest_api/base"
+	
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	"net/http"
