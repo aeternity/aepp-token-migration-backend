@@ -1,0 +1,467 @@
+package main
+
+import (
+	"github.com/go-chi/render"
+	"fmt"
+	"log"
+	"os"
+	"strconv"
+	"encoding/json"
+
+	"net/http"
+	"github.com/go-chi/chi"
+
+	"github.com/joho/godotenv"
+	db "ae-token-migration/postgre_sql"
+	memory "ae-token-migration/memory_merkle_tree"
+	"ae-token-migration/rest_api/validator"
+	"ae-token-migration/rest_api/base"
+
+	// "github.com/ethereum/go-ethereum/crypto"
+	// "github.com/ethereum/go-ethereum/common/hexutil"
+
+	"github.com/aeternity/aepp-sdk-go/aeternity"
+	"github.com/aeternity/aepp-sdk-go/utils"
+	// "math/big"
+
+	rlp "github.com/randomshinichi/rlpae"
+)
+
+func main() {
+	connectionString, port := loadEnv()
+
+	fmt.Println(port)
+	
+	tree := db.LoadMerkleTree(memory.NewMerkleTree(), connectionString)
+
+	fmt.Println(tree)
+	fmt.Printf("root hash: %s\n", tree.Root())
+
+	// temp := crypto.Keccak256Hash(
+	// 	[]byte("0x5c1164df5e95d4e8a5f020910babe9ef9aae3408a03db2dec916ad6df45fa8a0"), 
+	// 	[]byte("0xde72b9e5c10a148618a4d55b8cbbab08a63bd3cadcf0aad2300dbd3828b3bd00"))
+
+	// fmt.Printf("temp test 1: %s\n\n", temp.Hex())
+
+	// temp = crypto.Keccak256Hash(
+	// 	[]byte("0xeCDbC12040688f4AB81b5EDF698B1563684A5c33"), 
+	// 	[]byte("896157363220875575296000"))
+	// fmt.Printf("original data hash: %s\n\n", temp.Hex())
+
+	router := chi.NewRouter()
+
+	baseapi.MerkleTreeStatus(router, tree.FullMerkleTree)
+	baseapi.MerkleTreeHashes(router, tree.FullMerkleTree)
+	validator.MerkleTreeValidate(router, tree.FullMerkleTree)
+
+	
+	router.Post("/owner/add", func(w http.ResponseWriter, req *http.Request) {
+
+		type requestData struct {
+			EthAddress string `json:"ethAddress"`
+			Balance string `json:"balance"`
+			AeAddress string `json:"aeAddress"`
+		}
+
+		decoder := json.NewDecoder(req.Body)
+		var reqData requestData
+		err := decoder.Decode(&reqData)
+		if err != nil {
+			render.JSON(w, req, "Cannot parse request body!")
+			return
+		}
+
+		if reqData.EthAddress == "" {
+			render.JSON(w, req, "Missing ethAddress field!")
+			return
+		}
+
+		if reqData.Balance == "" {
+			render.JSON(w, req, "Invalid balance field!")
+			return
+		}
+
+		data := fmt.Sprintf("%s%s", reqData.EthAddress, reqData.Balance)
+		index, hash := tree.Add([]byte(data), reqData.EthAddress, reqData.Balance, reqData.AeAddress)
+
+		fmt.Printf("index: %d, hash: %s\n", index, hash)
+		fmt.Printf("root hash: %s\n", tree.Root())
+
+		render.JSON(w, req, fmt.Sprintf("Data was successfully added! index: %d, hash: %s", index, hash))
+	})
+
+
+	// gets hash at index 'X' and siblings
+	router.Get("/hash/{index}", func(w http.ResponseWriter, req *http.Request) {
+		type hashResponse struct {
+			Index int `json:"index"`
+			Hash string `json:"hash"`
+			// Siblings []string `json:"siblings"` 
+		}
+		
+		indexAsStr := chi.URLParam(req, "index")
+		// indexAsStr := req.URL.Query().Get("index")
+		index, err := strconv.Atoi(indexAsStr)
+		if err != nil {
+			render.JSON(w, req, "Invalid data input. Index should be an integer.")
+			fmt.Printf("[ERROR] %s", err)
+			return
+		}
+
+		hashAtIndex, err := tree.HashAt(index)
+		if err != nil {
+			render.JSON(w, req, "Invalid data input. Index should be an integer.")
+			fmt.Printf("[ERROR] %s", err)
+			return
+		}
+
+		render.JSON(w, req, hashResponse{Index: index, Hash: hashAtIndex})
+	})
+
+	
+
+	// router.Post("tx/receive", func(w http.ResponseWriter, req *http.Request) {
+	// 	
+	// })
+
+	// router.Post("tx/sign", func(w http.ResponseWriter, req *http.Request) {
+	// 	
+	// })
+
+	// router.Post("tx/raw", func(w http.ResponseWriter, req *http.Request) {
+	// 	
+	// })
+
+	router.Post("/migrate1", func(res http.ResponseWriter, req *http.Request){
+		type reqData struct {
+			Address string `json:"address"`
+			PubKey string `json:"pubKey"`
+			MessageDigest string `json:"messageDigest"`
+			Sig string `json:"sig"`
+			UnsignedTx string `json:"unsignedTx"`
+		}
+
+		decoder := json.NewDecoder(req.Body)
+		var data reqData
+		err := decoder.Decode(&data)
+		if err != nil {
+			render.JSON(res, req, fmt.Sprintf("Cannot parse request body! %s\n", err))
+			return
+		}
+
+
+
+		contractAddress := "ct_HVb6d4kirgqzY1rShmzRTRwukcsXobjHcpLVD2EggoHmn6wt2"
+		nodeURL := "http://localhost:3001"
+
+		type keyPair struct {
+			PublicKey string
+			PrivateKey string
+		}
+
+		key := keyPair{ 
+			PublicKey: "ak_2mwRmUeYmfuW93ti9HMSUJzCk1EYcQEfikVSzgo6k2VghsWhgU",
+			PrivateKey: "bb9f0b01c8c9553cfbaf7ef81a50f977b1326801ebf7294d1c2cbccdedf27476e9bbf604e611b5460a3b3999e9771b6f60417d73ce7c5519e12f7e127a1225ca" }
+
+		account, err := aeternity.AccountFromHexString(key.PrivateKey)
+		if err != nil {
+			fmt.Printf("==> AccountFromHexString", err)
+			return
+		}
+
+		fmt.Println(account.Address)
+
+		node := aeternity.NewNode(nodeURL, true)
+		compiler := aeternity.NewCompiler(aeternity.Config.Client.Contracts.CompilerURL, false)
+
+		contractSource := `contract TokenMigration =
+		type state = ()
+		
+		entrypoint migrate() = ()
+		// entrypoint verify(x: string) : bool = true`
+		
+		callData, err := compiler.EncodeCalldata(contractSource, "migrate", []string{}) // , []string{alice.Address}
+		if err != nil {
+			fmt.Printf("[ERROR] EncodeCalldata! %s\n", err)
+			render.JSON(res, req, "ok")
+			return
+		}
+
+		fmt.Println("==> CALLDATA")
+		fmt.Println(callData)
+
+		//phase 1 gen callTx
+
+		helpers := aeternity.Helpers{Node: node}
+		contract := aeternity.Context{Helpers: helpers, Address: key.PublicKey}
+		
+		// start phase 1
+		
+		callTx, err := contract.ContractCallTx(contractAddress, callData, aeternity.Config.Client.Contracts.ABIVersion, aeternity.Config.Client.Contracts.Amount, *utils.NewIntFromUint64(1e5), aeternity.Config.Client.Contracts.GasPrice, *utils.NewIntFromUint64(665480000000000))
+		if err != nil {
+			fmt.Printf("[ERROR] ContractCallTx! %s\n", err)
+			return
+		}
+
+		ctx := aeternity.NewContextFromURL(nodeURL, key.PublicKey, false)
+		tx, err := ctx.ContractCallTx(contractAddress, callData, aeternity.Config.Client.Contracts.ABIVersion, aeternity.Config.Client.Contracts.Amount, *utils.NewIntFromUint64(1e5), aeternity.Config.Client.Contracts.GasPrice, *utils.NewIntFromUint64(665480000000000))
+		if err != nil {
+			fmt.Printf("[ERROR] ContractCallTx! %s\n", err)
+			return
+		}
+		// ContractCallTx
+		// txAsStr, err := aeternity.Encode()
+
+
+
+		fmt.Printf("==> callTx %+v\n\n", callTx)
+		fmt.Printf("==> callData %+v\n\n", callData)
+		
+		// end phase 1
+
+
+		// myTx, err := aeternity.DeserializeTxStr(callData)
+		// if err != nil {
+		// 	fmt.Printf("[ERROR] DeserializeTxStr! %s\n\n", err)
+		// 	return
+		// }
+
+		// fmt.Printf("==> DeserializeTxStr %s \n\n", myTx)
+		fmt.Printf("==> NetworkID %s \n\n", aeternity.Config.Node.NetworkID)
+
+		signedTx, hash, signature, err := aeternity.SignHashTx(account, &tx, aeternity.Config.Node.NetworkID)
+		if err != nil {
+			fmt.Printf("[ERROR] SignHashTx! %s\n", err)
+			return
+		}
+
+		fmt.Printf("signedTx %s\n", signedTx)
+		fmt.Printf("hash %s\n", hash)
+		fmt.Printf("signature %s\n\n", signature)
+
+		// transform the tx into a tx_base64encodedstring so you can HTTP POST it
+		signedTxStr, err := aeternity.SerializeTx(&tx)
+		if err != nil {
+			fmt.Printf("[ERROR] SerializeTx! %s\n\n", err)
+			return
+		}
+
+		err = aeternity.BroadcastTransaction(node, signedTxStr)
+		if err != nil {
+			fmt.Printf("[ERROR] BroadcastTransaction 1! %s\n\n", err)
+			return
+		}
+
+		fmt.Println(">> SUCCESS <<")
+
+		// phase 2
+		
+		// signedTx, hash, _, err := aeternity.SignHashTx(account, myTx, aeternity.Config.Node.NetworkID)
+		// if err != nil {
+		// 	fmt.Printf("[ERROR] SignHashTx! %s\n", err)
+		// 	return
+		// }
+
+		// signedTxStr, err := aeternity.SerializeTx(&signedTx)
+		// if err != nil {
+		// 	fmt.Printf("[ERROR] Serialize! %s\n", err)
+		// 	return
+		// }
+
+		// fmt.Printf("=> signedTxStr: %s\n", signedTxStr)
+		// fmt.Printf("=> signedTx: %s\n", signedTx)
+		// fmt.Printf("=> hash: %s\n", hash)
+
+		// err = aeternity.BroadcastTransaction(aeNode, signedTxStr)
+		// if err != nil {
+		// 	fmt.Printf("[ERROR] Broadcast! %s\n", err)
+		// 	return
+		// }
+			
+		// //phase 3
+		// _, _, err = waitForTransaction(node, txHash)
+		// if err != nil {
+		// 	fmt.Printf("[ERROR] waitForTransaction! %s\n", err)
+		// 	return
+		// }
+	})
+
+	router.Post("/migrate", func(w http.ResponseWriter, req *http.Request) {
+			// public key/eth address, message digest, signature
+
+			
+			type reqData struct {
+				Address string `json:"address"`
+				PubKey string `json:"pubKey"`
+				MessageDigest string `json:"messageDigest"`
+				Sig string `json:"sig"`
+				UnsignedTx string `json:"unsignedTx"`
+			}
+
+			decoder := json.NewDecoder(req.Body)
+			var data reqData
+			err := decoder.Decode(&data)
+			if err != nil {
+				render.JSON(w, req, fmt.Sprintf("Cannot parse request body! %s\n", err))
+				return
+			}
+
+
+
+			contractAddress := "ct_2kWCEEgo35ic93wAfpeaugVKeYYyaupCUQHs3u6YUDHLQPRcUd"
+			nodeURL := "http://localhost:3001"
+			fmt.Println(contractAddress)
+
+			type keyPair struct {
+				PublicKey string
+				PrivateKey string
+			}
+
+			key := keyPair{ 
+				PublicKey: "ak_2mwRmUeYmfuW93ti9HMSUJzCk1EYcQEfikVSzgo6k2VghsWhgU",
+				PrivateKey: "bb9f0b01c8c9553cfbaf7ef81a50f977b1326801ebf7294d1c2cbccdedf27476e9bbf604e611b5460a3b3999e9771b6f60417d73ce7c5519e12f7e127a1225ca" }
+
+			account, err := aeternity.AccountFromHexString(key.PrivateKey)
+			if err != nil {
+				fmt.Println("==> account err")
+				fmt.Println(err)
+				return
+			}
+
+			node := aeternity.NewNode(nodeURL, true)
+			ac, _ := node.GetAccount(key.PublicKey)
+			nonce := ac.Nonce
+
+
+			ctx := aeternity.NewContextFromURL(nodeURL, key.PublicKey, false)
+
+			rawTx := data.UnsignedTx
+
+			//phase 1 gen callTx
+			// helpers := aeternity.Helpers{Node: node}
+			// contractsAlice := aeternity.Context{Helpers: helpers, Address: key.PublicKey}
+			
+			// start phase 1
+			// callTx, err := contractsAlice.ContractCallTx(contractAddress, rawTx, aeternity.Config.Client.Contracts.ABIVersion, aeternity.Config.Client.Contracts.Amount, *utils.NewIntFromUint64(1e5), aeternity.Config.Client.Contracts.GasPrice, *utils.NewIntFromUint64(665480000000000))
+			// if err != nil {
+			// 	fmt.Printf("[ERROR] ContractCallTx! %s\n", err)
+			// 	return
+			// }
+
+			// fmt.Printf("Call %+v\n", callTx)
+			// end phase 1
+			
+				
+			// convert unsigned tx to Transaction obj/struct
+			myTx, err := aeternity.DeserializeTxStr(rawTx)
+			if err != nil {
+				fmt.Printf("[ERROR] DeserializeTxStr! %s\n\n", err)
+				return
+			}
+
+
+			// phase 2
+			txHash := signBroadcast(myTx, account, node)
+			
+			//phase 3
+			_, _, err = waitForTransaction(node, txHash)
+			if err != nil {
+				fmt.Printf("[ERROR] waitForTransaction! %s\n", err)
+				return
+			}
+
+			fmt.Printf("==> waitForTransaction:\n", txHash)
+
+			fmt.Println("account")
+			fmt.Println(account)
+
+			fmt.Println("node")
+			fmt.Println(node)
+
+			fmt.Println(nonce)
+			fmt.Println(ctx)
+
+			render.JSON(w, req, "ok")
+	})
+
+	fmt.Printf("Server start on port: %d\n", port)
+	strPort := fmt.Sprintf(":%d", port)
+	err := http.ListenAndServe(strPort, router)
+	if err != nil {
+		fmt.Printf("Server cannot start has ERROR: %s", err)
+	}
+}
+
+func loadEnv() (string, int){
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	connectionString := os.Getenv("CONNECTION_STRING_POSTGRESQL")
+	port, err := strconv.Atoi(os.Getenv("GO_API_PORT"))
+	if err != nil {
+		log.Fatal("Error parsing port!")
+	}
+
+	return connectionString, port
+}
+
+
+func signBroadcast(tx rlp.Encoder, acc *aeternity.Account, aeNode *aeternity.Node) (hash string) {
+	signedTx, hash, _, err := aeternity.SignHashTx(acc, tx, aeternity.Config.Node.NetworkID)
+	if err != nil {
+		fmt.Printf("[ERROR] SignHashTx! %s\n", err)
+		return
+	}
+
+	signedTxStr, err := aeternity.SerializeTx(&signedTx)
+	if err != nil {
+		fmt.Printf("[ERROR] Serialize! %s\n", err)
+		return
+	}
+
+	fmt.Printf("=> signedTxStr: %s\n", signedTxStr)
+	fmt.Printf("=> signedTx: %s\n", signedTx)
+	fmt.Printf("=> hash: %s\n", hash)
+
+	err = aeternity.BroadcastTransaction(aeNode, signedTxStr)
+	if err != nil {
+		fmt.Printf("[ERROR] Broadcast! %s\n", err)
+		return
+	}
+
+	return hash
+}
+
+// func test(signedTxStr string, aeNode *aeternity.Node) {
+// 	err = aeternity.BroadcastTransaction(aeNode, signedTxStr)
+// 	if err != nil {
+// 		fmt.Printf("[ERROR] Broadcast! %s\n", err)
+// 		return
+// 	}
+// }
+
+func waitForTransaction(aeNode *aeternity.Node, hash string) (height uint64, microblockHash string, err error) {
+	height = getHeight(aeNode)
+	// fmt.Println("Waiting for", hash)
+	fmt.Println("==> height", height)
+	height, microblockHash, err = aeternity.WaitForTransactionUntilHeight(aeNode, hash, height-1000)
+	if err != nil {
+		// Sometimes, the tests want the tx to fail. Return the err to let them know.
+		return 0, "", err
+	}
+
+	fmt.Println("=-=-=-=> Transaction was found at", height, "microblockHash", microblockHash, "err", err)
+	return height, microblockHash, err
+}
+
+func getHeight(aeNode *aeternity.Node) (h uint64) {
+	h, err := aeNode.GetHeight()
+	if err != nil {
+		fmt.Println("Could not retrieve chain height")
+		return
+	}
+	// fmt.Println("Current Height:", h)
+	return
+}
