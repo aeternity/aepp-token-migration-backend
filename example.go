@@ -2,13 +2,16 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"math/big"
+	"net/http"
 
 	"github.com/aeternity/aepp-sdk-go/aeternity"
 	"github.com/aeternity/aepp-sdk-go/utils"
 )
 
 func main() {
+
 	contractAddress := "ct_2Ker9cb12skKWR2UZLxuT63MZRStC34KkUA9QMAiQFN6DNe5vC"
 	nodeURL := "http://localhost:3001"
 
@@ -48,8 +51,8 @@ func main() {
 
 	ctx := aeternity.NewContextFromURL(nodeURL, key.PublicKey, true)
 
-	var abiVersion uint16 = 1 // aeternity.Config.Client.Contracts.ABIVersion
-	var amount *big.Int = big.NewInt(1)   // aeternity.Config.Client.Contracts.Amount
+	var abiVersion uint16 = 1                      // aeternity.Config.Client.Contracts.ABIVersion
+	var amount *big.Int = big.NewInt(1)            // aeternity.Config.Client.Contracts.Amount
 	var gasPrice *big.Int = big.NewInt(1000000000) // aeternity.Config.Client.Contracts.GasPrice
 	var gas *big.Int = utils.NewIntFromUint64(1e5) // aeternity.Config.Client.Contracts.GasPrice
 	var fee *big.Int = utils.NewIntFromUint64(665480000000000)
@@ -63,7 +66,7 @@ func main() {
 	fmt.Println(tx)
 
 	height, _ := node.GetHeight()
-	
+
 	fmt.Println("        ")
 	fmt.Printf("==> height: %v \n", height)
 	fmt.Printf("==> contractAddress: %s \n", contractAddress)
@@ -102,6 +105,12 @@ func main() {
 		fmt.Printf("[ERROR] SerializeTx! %s\n\n", err)
 		return
 	}
+
+	// hardcoded signed tx from another wallet
+	// signedTxStr = "tx_+QEHCwH4QrhAysY5FATHgVEh8VGvuAbQhtULcpLxDGfnzJUb65wF57c/IaSqVUKO/tLH1MkBB7oTGttFfqxPNRiQZu/a+7eOCri/+L0rAaEB7rRLxYtB2ulh6urhPK3dTHn70dT+PQVEo+/UlL+Kx4wBoQWuDIlrtX5o+od+RMM0lnwJM6ujrUvUGQ90ZiDvr3hq+QGHAZy/M+RYAAABgxgX+IQ7msoAuGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIBTESDFrJ3ThKpSQmPm0ASyca+RQ3Yxp992RkV9H/QImAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAh6iyR"
+
+	fmt.Println(" ==> signedTxStr <<--")
+	fmt.Println(signedTxStr)
 
 	err = aeternity.BroadcastTransaction(node, signedTxStr)
 	if err != nil {

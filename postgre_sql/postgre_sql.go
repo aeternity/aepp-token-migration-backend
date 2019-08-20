@@ -29,6 +29,8 @@ const (
 		leaf_index int,
 		PRIMARY KEY (hash)
 	  )` // 53 ?
+	QueryGetByEthAddress = `SELECT * FROM token_migration
+	where lower(eth_address) = $1`
 )
 
 type PostgresMerkleTree struct {
@@ -112,4 +114,24 @@ func getAndInsertStoredHashes(db *sql.DB, tree merkletree.InternalMerkleTree) {
 	}
 
 	tree.Recalculate()
+}
+
+// Get additional info from Db by given ethAddress
+func (tree *PostgresMerkleTree) GetByEthAddress(ethAddress string) (hash string, leaf_index int, balance string, ae_address string){
+	rows, err := tree.db.Query(QueryGetByEthAddress, ethAddress)
+	if err != nil {
+		panic("Could not query the stored hashes.\n Original error: " + err.Error())
+	}
+
+	for rows.Next() {
+		var eth_address string
+
+
+		err = rows.Scan(&hash, &eth_address, &ae_address, &balance, &leaf_index)
+		if err != nil {
+			panic("Could not scan the stored hashes.\n Original error: " + err.Error())
+		}
+	}
+
+	return hash, leaf_index, balance, ae_address
 }
