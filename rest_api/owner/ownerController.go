@@ -2,7 +2,6 @@ package owner
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -55,6 +54,12 @@ func addTokenOwner(tree *postgre.PostgresMerkleTree) http.HandlerFunc {
 		data := utils.PreHashFormat(reqData.EthAddress, reqData.Balance) // fmt.Sprintf("%s:%s", reqData.EthAddress, reqData.Balance)
 		index, hash := tree.Add([]byte(data), strings.ToLower(reqData.EthAddress), reqData.Balance, reqData.AeAddress)
 
-		render.JSON(res, req, fmt.Sprintf("Data was successfully added! index: %d, hash: %s", index, hash))
+		type addOwnerResponse struct {
+			Index int `json:"index"`
+			Hash string `json:"hash"`
+			Message string `json:"message"`
+		}
+
+		render.JSON(res, req, addOwnerResponse{index, hash, "Data was successfully added!"})
 	}
 }
