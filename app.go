@@ -83,7 +83,16 @@ func loadEnv() (connectrinStr string, port int, secretKey string, contractRawUrl
 func getContractSource(contractRawUrlGit string) string {
 
 	if contractRawUrlGit == "" {
-		return ""
+		return `contract TokenMigration =
+			type state = ()
+		
+			entrypoint migrate(amountOfTokens: int, aeAddress: string, sig: string, h: string, leafIndex: int, siblings: string) =
+				require(verify(h, sig), "Invalid signature!")
+				transfer(aeAddress, amountOfTokens)
+				()
+		
+			function verify(h: string, sig: string) : bool = true
+			function transfer(to: string, amount: int) = ()`
 	}
 
 	resp, err := http.Get(contractRawUrlGit)

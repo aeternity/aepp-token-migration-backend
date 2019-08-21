@@ -185,20 +185,6 @@ func Migrate(router chi.Router, tree *postgre.PostgresMerkleTree, secretKey stri
 func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource string, aeContractAddress string, aeNodeUrl string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 
-		if contractSource == "" {
-			contractSource =
-				`contract TokenMigration =
-	type state = ()
-
-	entrypoint migrate(amountOfTokens: string, aeAddress: string, sig: string, h: string, leafIndex: string, siblings: string) =
-		require(verify(h, sig), "Invalid signature!")
-		transfer(aeAddress, amountOfTokens)
-		()
-
-	function verify(h: string, sig: string) : bool = true
-	function transfer(to: string, amount: string) = ()`
-		}
-
 		type reqData struct {
 			EthPubKey     string `json:"ethPubKey"`
 			MessageDigest string `json:"messageDigest"`
@@ -268,7 +254,7 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		// fmt.Printf("leaf inx type: %t\t%v\n", strconv.Itoa(leafIndex), strconv.Itoa(leafIndex))
 		// fmt.Printf("siblings type: %t\t%v\n", siblingsAsStr, siblingsAsStr)
 
-		callData, err := compiler.EncodeCalldata(contractSource, "migrate", []string{fmt.Sprintf(`"\"%s\""`, migrationInfo.Balance), fmt.Sprintf(`"\"%s\""`, data.AeAddress), fmt.Sprintf(`"\"%s\""`, data.Signature), fmt.Sprintf(`"\"%s\""`, migrationInfo.Hash), fmt.Sprintf(`"\"%s\""`, strconv.Itoa(migrationInfo.Leaf_index)), fmt.Sprintf(`"\"%s\""`, siblingsAsStr)})
+		callData, err := compiler.EncodeCalldata(contractSource, "migrate", []string{migrationInfo.Balance, fmt.Sprintf(`"\"%s\""`, data.AeAddress), fmt.Sprintf(`"\"%s\""`, data.Signature), fmt.Sprintf(`"\"%s\""`, migrationInfo.Hash), strconv.Itoa(migrationInfo.Leaf_index), fmt.Sprintf(`"\"%s\""`, siblingsAsStr)})
 		if err != nil {
 			log.Printf("[ERROR] EncodeCalldata! %s\n", err)
 			http.Error(w, fmt.Sprintf("Cannot encode call data. %s.", http.StatusText(500)), 500)
@@ -326,7 +312,7 @@ func waitForTransaction(tree *postgre.PostgresMerkleTree, aeNode *aeternity.Node
 	height, microblockHash, err := aeternity.WaitForTransactionUntilHeight(aeNode, hash, height + 100)
 	if err != nil {
 		// Sometimes, the tests want the tx to fail. Return the err to let them know.
-		log.Println(err)
+		log.Println("Wait for transaction", err)
 		return
 	} 
 
