@@ -3,17 +3,19 @@ package postgres
 import (
 	"database/sql"
 	"fmt"
-	// "github.com/LimeChain/merkletree"
+	"log"
+
 	types "aepp-token-migration-backend/types"
-	_ "github.com/lib/pq"
 	"sync"
+
+	_ "github.com/lib/pq"
 )
 
 const (
-	InsertQuery       = `INSERT INTO token_migration (hash, eth_address, ae_address, balance, leaf_index, migrated) 
+	InsertQuery = `INSERT INTO token_migration (hash, eth_address, ae_address, balance, leaf_index, migrated) 
 						 VALUES ($1, $2, $3, $4, $5, $6)`
-	SelectQuery       = "SELECT hash FROM token_migration ORDER BY leaf_index"
-	CreateQuery       = `CREATE TABLE token_migration (
+	SelectQuery = "SELECT hash FROM token_migration ORDER BY leaf_index"
+	CreateQuery = `CREATE TABLE token_migration (
 		hash varchar(66) NOT NULL,
 		eth_address varchar(42) NOT NULL,
 		ae_address varchar(53) DEFAULT '',
@@ -22,7 +24,7 @@ const (
 		migrated bit NOT NULL,
 		migrate_tx_hash varchar(100) DEFAULT '',
 		PRIMARY KEY (hash)
-	  )` // 53 ?
+	  )`  // 53 ?
 	CreateIfNotExists = `CREATE TABLE IF NOT EXISTS token_migration (
 		hash varchar(66) NOT NULL,
 		eth_address varchar(42) NOT NULL,
@@ -32,9 +34,12 @@ const (
 		migrated bit NOT NULL,
 		migrate_tx_hash varchar(100) DEFAULT '',
 		PRIMARY KEY (hash)
-	  )` // 53 ?
+	  )`  // 53 ?
 	QueryGetByEthAddress = `SELECT * FROM token_migration
 	where lower(eth_address) = $1`
+	QuerySetMigratedToSuccess = `UPDATE public.token_migration
+	SET migrated = '1', migrate_tx_hash = $2, ae_address = $3
+	WHERE lower(eth_address) = $1;`
 )
 
 type PostgresMerkleTree struct {
@@ -62,9 +67,24 @@ func (tree *PostgresMerkleTree) addHashToDB(hash string) {
 func (tree *PostgresMerkleTree) addDataToDB(hash string, ethAddress string, aeAddress string, balance string, leafIndex int) {
 	_, err := tree.db.Exec(InsertQuery, hash, ethAddress, aeAddress, balance, leafIndex, 0)
 	if err != nil {
-		fmt.Println("==> Error:")
-		fmt.Println(err.Error())
+		log.Println(err.Error())
 	}
+}
+
+// SetMigratedToSuccess when tx is mined, migrated will be set to TRUE
+func (tree *PostgresMerkleTree) SetMigratedToSuccess(ethAddress string, txHash string, aeAddress string) {
+	if ethAddress == "" || txHash == "" || aeAddress == "" {
+		log.Printf("[SetMigratedToSuccess] Invalid attempt to set migration status! eth address: %s, tx hash: %s, ae address: %s", ethAddress, txHash, aeAddress)
+		return
+	}
+
+	tree.mutex.Lock()
+	_, err := tree.db.Exec(QuerySetMigratedToSuccess, ethAddress, txHash, aeAddress)
+	if err != nil {
+		log.Printf("[SetMigratedToSuccess] ", err.Error())
+	}
+
+	tree.mutex.Unlock()
 }
 
 // LoadMerkleTree takes an implementation of Merkle tree and postgre connection string
@@ -73,7 +93,7 @@ func (tree *PostgresMerkleTree) addDataToDB(hash string, ethAddress string, aeAd
 func LoadMerkleTree(tree types.FullMerkleTree, connStr string) *PostgresMerkleTree {
 
 	db := connectToDb(connStr)
-	
+
 	createHashesTable(db)
 
 	getAndInsertStoredHashes(db, tree)

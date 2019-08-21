@@ -158,6 +158,7 @@ func getInfoByEthAddress(tree *postgre.PostgresMerkleTree) http.HandlerFunc {
 			Index  int    `json:"index"`
 			Hash   string `json:"hash"`
 			Tokens string `json:"tokens"`
+			Migrated bool `json:"migrated"`
 		}
 
 		ethAddress := chi.URLParam(req, "ethAddress")
@@ -169,7 +170,7 @@ func getInfoByEthAddress(tree *postgre.PostgresMerkleTree) http.HandlerFunc {
 		// hash, index, tokens, _ := tree.GetByEthAddress(strings.ToLower(ethAddress))
 		migrationInfo := tree.GetByEthAddress(strings.ToLower(ethAddress))
 
-		render.JSON(w, req, hashResponse{Index: migrationInfo.Leaf_index, Hash: migrationInfo.Hash, Tokens: migrationInfo.Balance})
+		render.JSON(w, req, hashResponse{Index: migrationInfo.Leaf_index, Hash: migrationInfo.Hash, Tokens: migrationInfo.Balance, Migrated: migrationInfo.Migrated == 1})
 	}
 }
 
@@ -311,34 +312,26 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 			return
 		}
 
-		height, microblock, err := waitForTransaction(node, hash)
-		if err != nil {
-			log.Printf("[ERROR] waitForTransaction! %s\n", err)
-			http.Error(w, http.StatusText(500), 500)
-			return
-		}
-
 		type response struct {
-			Success    bool
-			Height     uint64
-			Microblock string
+			TxHash string
 		}
+		render.JSON(w, req, response{ TxHash : hash })
 
-		render.JSON(w, req, response{Success: true, Height: height, Microblock: microblock})
+		go waitForTransaction(tree, node, hash, data.EthPubKey, data.AeAddress)
 	}
 }
 
-func waitForTransaction(aeNode *aeternity.Node, hash string) (height uint64, microblockHash string, err error) {
-	height = getHeight(aeNode)
-	height, microblockHash, err = aeternity.WaitForTransactionUntilHeight(aeNode, hash, height+1000) // aeternity.WaitForTransactionUntilHeight(aeNode, hash, height + 1000)
+func waitForTransaction(tree *postgre.PostgresMerkleTree, aeNode *aeternity.Node, hash string, ethAddress string, aeAddress string) { // (height uint64, microblockHash string, err error)
+	height := getHeight(aeNode)
+	height, microblockHash, err := aeternity.WaitForTransactionUntilHeight(aeNode, hash, height + 100)
 	if err != nil {
 		// Sometimes, the tests want the tx to fail. Return the err to let them know.
 		log.Println(err)
-		return 0, "", err
-	}
+		return
+	} 
 
-	log.Println("=-=-=-=> Transaction was found at", height, "microblockHash", microblockHash, "err", err)
-	return height, microblockHash, err
+	tree.SetMigratedToSuccess(ethAddress, hash, aeAddress)
+	log.Println("[INFO] Transaction was found at", height, "microblockHash", microblockHash, "err", err)
 }
 
 func getHeight(aeNode *aeternity.Node) (h uint64) {
