@@ -3,11 +3,7 @@ package validator
 import (
 	"encoding/json"
 	
-	// "github.com/LimeChain/merkletree"
-	// merkletree "aepp-token-migration-backend/memory_merkle_tree"
 	merkletree "aepp-token-migration-backend/types"
-	
-	// "github.com/LimeChain/merkletree/restapi/baseapi"
 	baseapi "aepp-token-migration-backend/rest_api/base"
 	
 	"github.com/go-chi/chi"
@@ -45,11 +41,6 @@ func validate(tree merkletree.ExternalMerkleTree) http.HandlerFunc {
 			return
 		}
 
-		// if b.Data == "" {
-		// 	render.JSON(w, r, validateResponse{baseapi.MerkleAPIResponse{Status: false, Error: "Missing data field"}, false})
-		// 	return
-		// }
-
 		if b.EthAddress == "" {
 			render.JSON(w, r, validateResponse{baseapi.MerkleAPIResponse{Status: false, Error: "Missing 'ethAddress' field"}, false})
 			return
@@ -61,9 +52,6 @@ func validate(tree merkletree.ExternalMerkleTree) http.HandlerFunc {
 		}
 
 		mergedData := fmt.Sprintf("%s%s", b.EthAddress, b.Balance)
-		// fmt.Println("------> start <--------")
-		// fmt.Println(mergedData)
-		// fmt.Println("------> end <--------")
 
 		exists, err := tree.ValidateExistence([]byte(mergedData), b.Index, b.Hashes)
 		if err != nil {

@@ -5,6 +5,7 @@ import (
 	"aepp-sdk-go/utils"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/big"
 	"net/http"
 	"strconv"
@@ -122,22 +123,20 @@ func getHashByLeafIndex(tree *postgre.PostgresMerkleTree) http.HandlerFunc {
 		type hashResponse struct {
 			Index int    `json:"index"`
 			Hash  string `json:"hash"`
-			// Siblings []string `json:"siblings"`
 		}
 
 		indexAsStr := chi.URLParam(req, "index")
-		// indexAsStr := req.URL.Query().Get("index")
 		index, err := strconv.Atoi(indexAsStr)
 		if err != nil {
-			render.JSON(w, req, "Invalid data input. Index should be an integer.")
-			fmt.Printf("[ERROR] %s", err)
+			log.Printf("[ERROR] Invalid query param. Index should be an integer. %s", err)
+			http.Error(w, "Invalid query param. Index should be an integer.", 400)
 			return
 		}
 
 		hashAtIndex, err := tree.HashAt(index)
 		if err != nil {
-			render.JSON(w, req, "Invalid data input. Index should be an integer.")
-			fmt.Printf("[ERROR] %s", err)
+			log.Printf("[ERROR] get hash at index. %s", err)
+			http.Error(w, "Invalid index.", 400)
 			return
 		}
 
@@ -163,7 +162,7 @@ func getInfoByEthAddress(tree *postgre.PostgresMerkleTree) http.HandlerFunc {
 
 		ethAddress := chi.URLParam(req, "ethAddress")
 		if ethAddress == "" {
-			http.Error(w, "Invalid request! Missing eth address!", 404)
+			http.Error(w, "Invalid request! Missing eth address!", 400)
 			return
 		}
 
@@ -173,7 +172,7 @@ func getInfoByEthAddress(tree *postgre.PostgresMerkleTree) http.HandlerFunc {
 	}
 }
 
-// Migrate AE tokens (erc20) from ethereum network to AEs in aeternity network, validate provided sender's signature 
+// Migrate AE tokens (erc20) from ethereum network to AEs in aeternity network, validate provided sender's signature
 func Migrate(router chi.Router, tree *postgre.PostgresMerkleTree, secretKey string, contractSource string, aeContractAddress string, aeNodeUrl string) chi.Router {
 
 	router.Post("/migrate", migrate(tree, secretKey, contractSource, aeContractAddress, aeNodeUrl))
@@ -214,23 +213,36 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 			return
 		}
 
-		// get additional data from db
-		hash, leafIndex, amountOfTokens, aeAddress := tree.GetByEthAddress(data.EthPubKey)
-
-		// TODO: should owner change its ae address ?!
-		if aeAddress == "" {
-			aeAddress = data.AeAddress
+		if data.EthPubKey == "" {
+			log.Printf("[ERROR] Missing EthPubKey! Migrate procedure should NOT start!\n")
+			http.Error(w, "Missing EthPubKey! Migrate procedure should NOT start!", 400)
+			return
 		}
 
-		if aeAddress == "" {
-			fmt.Printf("[ERROR] Missing AE address! Migrate procedure should NOT start!\n")
+		if data.MessageDigest == "" {
+			log.Printf("[ERROR] Missing MessageDigest! Migrate procedure should NOT start!\n")
+			http.Error(w, "Missing MessageDigest! Migrate procedure should NOT start!", 400)
+			return
+		}
+
+		if data.Signature == "" {
+			log.Printf("[ERROR] Missing Signature! Migrate procedure should NOT start!\n")
+			http.Error(w, "Missing Signature! Migrate procedure should NOT start!", 400)
+			return
+		}
+
+		if data.AeAddress == "" {
+			log.Printf("[ERROR] Missing AE address! Migrate procedure should NOT start!\n")
 			http.Error(w, "Missing AE address! Migrate procedure should NOT start!", 400)
 			return
 		}
 
+		// get additional data from db
+		hash, leafIndex, amountOfTokens, _ := tree.GetByEthAddress(data.EthPubKey)
+
 		siblings, err := tree.IntermediaryHashesByIndex(leafIndex)
 		if err != nil {
-			fmt.Printf("[ERROR] IntermediaryHashesByIndex! %s\n", err)
+			log.Printf("[ERROR] IntermediaryHashesByIndex! %s\n", err)
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
@@ -239,7 +251,7 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 
 		account, err := aeternity.AccountFromHexString(secretKey)
 		if err != nil {
-			fmt.Printf("[ERROR] Account error! %s\n", err)
+			log.Printf("[ERROR] Account error! %s\n", err)
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
@@ -256,7 +268,7 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 
 		callData, err := compiler.EncodeCalldata(contractSource, "migrate", []string{fmt.Sprintf(`"\"%s\""`, amountOfTokens), fmt.Sprintf(`"\"%s\""`, data.AeAddress), fmt.Sprintf(`"\"%s\""`, data.Signature), fmt.Sprintf(`"\"%s\""`, hash), fmt.Sprintf(`"\"%s\""`, strconv.Itoa(leafIndex)), fmt.Sprintf(`"\"%s\""`, siblingsAsStr)})
 		if err != nil {
-			fmt.Printf("[ERROR] EncodeCalldata! %s\n", err)
+			log.Printf("[ERROR] EncodeCalldata! %s\n", err)
 			http.Error(w, fmt.Sprintf("Cannot encode call data. %s.", http.StatusText(500)), 500)
 			return
 		}
@@ -271,14 +283,14 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 
 		tx, err := context.ContractCallTx(aeContractAddress, callData, abiVersion, *amount, *gas, *gasPrice, *fee)
 		if err != nil {
-			fmt.Printf("[ERROR] ContractCallTx! %s\n", err)
+			log.Printf("[ERROR] ContractCallTx! %s\n", err)
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
 
 		signedTx, hash, _, err := aeternity.SignHashTx(account, &tx, "ae_devnet") // signedTx, hash, signature, err
 		if err != nil {
-			fmt.Printf("[ERROR] SignHashTx! %s\n", err)
+			log.Printf("[ERROR] SignHashTx! %s\n", err)
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
@@ -286,21 +298,21 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		// transform the tx into a tx_base64encodedstring so you can HTTP POST it
 		signedTxStr, err := aeternity.SerializeTx(&signedTx)
 		if err != nil {
-			fmt.Printf("[ERROR] SerializeTx! %s\n", err)
+			log.Printf("[ERROR] SerializeTx! %s\n", err)
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
 
 		err = aeternity.BroadcastTransaction(node, signedTxStr)
 		if err != nil {
-			fmt.Printf("[ERROR] BroadcastTransaction! %s\n", err)
+			log.Printf("[ERROR] BroadcastTransaction! %s\n", err)
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
 
 		height, microblock, err := waitForTransaction(node, hash)
 		if err != nil {
-			fmt.Printf("[ERROR] waitForTransaction! %s\n", err)
+			log.Printf("[ERROR] waitForTransaction! %s\n", err)
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
@@ -320,19 +332,20 @@ func waitForTransaction(aeNode *aeternity.Node, hash string) (height uint64, mic
 	height, microblockHash, err = aeternity.WaitForTransactionUntilHeight(aeNode, hash, height+1000) // aeternity.WaitForTransactionUntilHeight(aeNode, hash, height + 1000)
 	if err != nil {
 		// Sometimes, the tests want the tx to fail. Return the err to let them know.
+		log.Println(err)
 		return 0, "", err
 	}
 
-	fmt.Println("=-=-=-=> Transaction was found at", height, "microblockHash", microblockHash, "err", err)
+	log.Println("=-=-=-=> Transaction was found at", height, "microblockHash", microblockHash, "err", err)
 	return height, microblockHash, err
 }
 
 func getHeight(aeNode *aeternity.Node) (h uint64) {
 	h, err := aeNode.GetHeight()
 	if err != nil {
-		fmt.Println("Could not retrieve chain height")
+		log.Println("Could not retrieve chain height")
 		return
 	}
-	
+
 	return
 }
