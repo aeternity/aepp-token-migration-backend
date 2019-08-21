@@ -15,6 +15,7 @@ import (
 	// merkletree "aepp-token-migration-backend/memory_merkle_tree"
 	postgre "aepp-token-migration-backend/postgre_sql"
 	merkletree "aepp-token-migration-backend/types"
+	appUtils "aepp-token-migration-backend/utils"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
@@ -33,10 +34,10 @@ func MerkleTreeHashes(treeRouter chi.Router, tree merkletree.ExternalMerkleTree)
 }
 
 // MerkleTreeInsert takes pointer to initialized router and the merkle tree and exposes Rest API routes for addition
-func MerkleTreeInsert(treeRouter chi.Router, tree merkletree.ExternalMerkleTree) chi.Router {
-	treeRouter.Post("/", addDataHandler(tree))
-	return treeRouter
-}
+// func MerkleTreeInsert(treeRouter chi.Router, tree merkletree.ExternalMerkleTree) chi.Router {
+// 	treeRouter.Post("/", addDataHandler(tree))
+// 	return treeRouter
+// }
 
 // MerkleAPIResponse represents the minimal response structure
 type MerkleAPIResponse struct {
@@ -51,6 +52,9 @@ type treeStatusResponse struct {
 
 func getTreeStatus(tree merkletree.ExternalMerkleTree) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		appUtils.LogRequest(r, "get /")
+
 		if tree.Length() == 0 {
 			render.JSON(w, r, treeStatusResponse{MerkleAPIResponse{true, ""}, nil})
 			return
@@ -67,6 +71,8 @@ type intermediaryHashesResponse struct {
 
 func getIntermediaryHashesHandler(tree merkletree.ExternalMerkleTree) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		appUtils.LogRequest(r, "/siblings/{index}")
+
 		index, err := strconv.Atoi(chi.URLParam(r, "index"))
 		if err != nil {
 			render.JSON(w, r, intermediaryHashesResponse{MerkleAPIResponse{false, err.Error()}, nil})
@@ -91,24 +97,27 @@ type addDataResponse struct {
 	Hash  string `json:"hash,omitempty"`
 }
 
-func addDataHandler(tree merkletree.ExternalMerkleTree) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		decoder := json.NewDecoder(r.Body)
-		var b addDataRequest
-		err := decoder.Decode(&b)
-		if err != nil {
-			render.JSON(w, r, addDataResponse{MerkleAPIResponse{false, err.Error()}, -1, ""})
-			return
-		}
+// func addDataHandler(tree merkletree.ExternalMerkleTree) http.HandlerFunc {
+// 	return func(w http.ResponseWriter, r *http.Request) {
 
-		if b.Data == "" {
-			render.JSON(w, r, addDataResponse{MerkleAPIResponse{false, "Missing data field"}, -1, ""})
-			return
-		}
-		index, hash := tree.Add([]byte(b.Data))
-		render.JSON(w, r, addDataResponse{MerkleAPIResponse{true, ""}, index, hash})
-	}
-}
+// 		appUtils.LogRequest(r, "post /")
+
+// 		decoder := json.NewDecoder(r.Body)
+// 		var b addDataRequest
+// 		err := decoder.Decode(&b)
+// 		if err != nil {
+// 			render.JSON(w, r, addDataResponse{MerkleAPIResponse{false, err.Error()}, -1, ""})
+// 			return
+// 		}
+
+// 		if b.Data == "" {
+// 			render.JSON(w, r, addDataResponse{MerkleAPIResponse{false, "Missing data field"}, -1, ""})
+// 			return
+// 		}
+// 		index, hash := tree.Add([]byte(b.Data))
+// 		render.JSON(w, r, addDataResponse{MerkleAPIResponse{true, ""}, index, hash})
+// 	}
+// }
 
 // GetHashByLeafIndex gets hash at index 'X'
 func GetHashByLeafIndex(router chi.Router, tree *postgre.PostgresMerkleTree) chi.Router {
@@ -120,6 +129,8 @@ func GetHashByLeafIndex(router chi.Router, tree *postgre.PostgresMerkleTree) chi
 
 func getHashByLeafIndex(tree *postgre.PostgresMerkleTree) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		appUtils.LogRequest(req, "/hash/{index}")
+		
 		type hashResponse struct {
 			Index int    `json:"index"`
 			Hash  string `json:"hash"`
@@ -154,11 +165,13 @@ func GetInfoByEthAddress(router chi.Router, tree *postgre.PostgresMerkleTree) ch
 
 func getInfoByEthAddress(tree *postgre.PostgresMerkleTree) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		appUtils.LogRequest(req, "/info/{ethAddress}")
+
 		type hashResponse struct {
-			Index  int    `json:"index"`
-			Hash   string `json:"hash"`
-			Tokens string `json:"tokens"`
-			Migrated bool `json:"migrated"`
+			Index    int    `json:"index"`
+			Hash     string `json:"hash"`
+			Tokens   string `json:"tokens"`
+			Migrated bool   `json:"migrated"`
 		}
 
 		ethAddress := chi.URLParam(req, "ethAddress")
@@ -184,6 +197,8 @@ func Migrate(router chi.Router, tree *postgre.PostgresMerkleTree, secretKey stri
 
 func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource string, aeContractAddress string, aeNodeUrl string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+
+		appUtils.LogRequest(req, "/migrate")
 
 		type reqData struct {
 			EthPubKey     string `json:"ethPubKey"`
@@ -307,7 +322,7 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		type response struct {
 			TxHash string
 		}
-		render.JSON(w, req, response{ TxHash : hash })
+		render.JSON(w, req, response{TxHash: hash})
 
 		go waitForTransaction(tree, node, hash, data.EthPubKey, data.AeAddress)
 	}
@@ -315,12 +330,12 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 
 func waitForTransaction(tree *postgre.PostgresMerkleTree, aeNode *aeternity.Node, hash string, ethAddress string, aeAddress string) { // (height uint64, microblockHash string, err error)
 	height := getHeight(aeNode)
-	height, microblockHash, err := aeternity.WaitForTransactionUntilHeight(aeNode, hash, height + 100)
+	height, microblockHash, err := aeternity.WaitForTransactionUntilHeight(aeNode, hash, height+100)
 	if err != nil {
 		// Sometimes, the tests want the tx to fail. Return the err to let them know.
 		log.Println("Wait for transaction", err)
 		return
-	} 
+	}
 
 	tree.SetMigratedToSuccess(ethAddress, hash, aeAddress)
 	log.Println("[INFO] Transaction was found at", height, "microblockHash", microblockHash, "err", err)

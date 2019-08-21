@@ -23,6 +23,7 @@ func AddTokenOwner(router chi.Router, tree *postgre.PostgresMerkleTree) chi.Rout
 
 func addTokenOwner(tree *postgre.PostgresMerkleTree) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
+		utils.LogRequest(req, "/owner")
 
 		type requestData struct {
 			EthAddress string `json:"ethAddress"`

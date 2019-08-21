@@ -34,6 +34,8 @@ type validateResponse struct {
 
 func validate(tree merkletree.ExternalMerkleTree) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		utils.LogRequest(r, "/validate")
+
 		decoder := json.NewDecoder(r.Body)
 		var b validateRequest
 		err := decoder.Decode(&b)
