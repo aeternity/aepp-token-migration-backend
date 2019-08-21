@@ -73,7 +73,7 @@ func loadEnv() (connectrinStr string, port int, secretKey string, contractRawUrl
 	}
 
 	secretKey = os.Getenv("SECRET_KEY")
-	contractRawUrl = os.Getenv("CONTRACT_RAW_URL_GIT")
+	contractRawUrl = os.Getenv("CONTRACT_SOURCE_URL_GIT_RAW")
 	aeContractAddress = os.Getenv("AE_CONTRACT_TOKEN_MIGRATION_ADDRESS")
 	aeNodeUrl = os.Getenv("AE_NODE_URL")
 
@@ -81,7 +81,6 @@ func loadEnv() (connectrinStr string, port int, secretKey string, contractRawUrl
 }
 
 func getContractSource(contractRawUrlGit string) string {
-	// gitUrl := `https://raw.githubusercontent.com/aeternity/aepp-sophia-examples/master/examples/CryptoHamster/contracts/crypto-hamsters.aes`
 
 	if contractRawUrlGit == "" {
 		return ""
