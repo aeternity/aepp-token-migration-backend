@@ -228,6 +228,12 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		// get additional data from db
 		migrationInfo := tree.GetByEthAddress(data.EthPubKey)
 
+		if migrationInfo.Migrated == 1 {
+			log.Println("[ERROR] Eth address already migrate its tokens!")
+			http.Error(w, "Eth address already migrate its tokens!", 400)
+			return
+		}
+
 		siblings, err := tree.IntermediaryHashesByIndex(migrationInfo.Leaf_index)
 		if err != nil {
 			log.Printf("[ERROR] IntermediaryHashesByIndex! %s\n", err)
