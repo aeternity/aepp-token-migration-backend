@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	postgre "aepp-token-migration-backend/postgre_sql"
+	"aepp-token-migration-backend/utils"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
@@ -51,7 +52,7 @@ func addTokenOwner(tree *postgre.PostgresMerkleTree) http.HandlerFunc {
 			return
 		}
 
-		data := fmt.Sprintf("%s%s", reqData.EthAddress, reqData.Balance)
+		data := utils.PreHashFormat(reqData.EthAddress, reqData.Balance) // fmt.Sprintf("%s:%s", reqData.EthAddress, reqData.Balance)
 		index, hash := tree.Add([]byte(data), strings.ToLower(reqData.EthAddress), reqData.Balance, reqData.AeAddress)
 
 		render.JSON(res, req, fmt.Sprintf("Data was successfully added! index: %d, hash: %s", index, hash))

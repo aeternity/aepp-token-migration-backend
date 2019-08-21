@@ -52,3 +52,14 @@ type FullMerkleTree interface {
 	internaler
 	externaler
 }
+
+// MigrationInfo is a token owner info
+type MigrationInfo struct {
+	Eth_address string
+	Hash string
+	Leaf_index int
+	Balance string
+	Ae_address string
+	Migrated int
+	Migrate_tx_hash string
+}

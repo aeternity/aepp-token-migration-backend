@@ -166,9 +166,10 @@ func getInfoByEthAddress(tree *postgre.PostgresMerkleTree) http.HandlerFunc {
 			return
 		}
 
-		hash, index, tokens, _ := tree.GetByEthAddress(strings.ToLower(ethAddress))
+		// hash, index, tokens, _ := tree.GetByEthAddress(strings.ToLower(ethAddress))
+		migrationInfo := tree.GetByEthAddress(strings.ToLower(ethAddress))
 
-		render.JSON(w, req, hashResponse{Index: index, Hash: hash, Tokens: tokens})
+		render.JSON(w, req, hashResponse{Index: migrationInfo.Leaf_index, Hash: migrationInfo.Hash, Tokens: migrationInfo.Balance})
 	}
 }
 
@@ -238,9 +239,9 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		}
 
 		// get additional data from db
-		hash, leafIndex, amountOfTokens, _ := tree.GetByEthAddress(data.EthPubKey)
+		migrationInfo := tree.GetByEthAddress(data.EthPubKey)
 
-		siblings, err := tree.IntermediaryHashesByIndex(leafIndex)
+		siblings, err := tree.IntermediaryHashesByIndex(migrationInfo.Leaf_index)
 		if err != nil {
 			log.Printf("[ERROR] IntermediaryHashesByIndex! %s\n", err)
 			http.Error(w, http.StatusText(500), 500)
@@ -266,7 +267,7 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		// fmt.Printf("leaf inx type: %t\t%v\n", strconv.Itoa(leafIndex), strconv.Itoa(leafIndex))
 		// fmt.Printf("siblings type: %t\t%v\n", siblingsAsStr, siblingsAsStr)
 
-		callData, err := compiler.EncodeCalldata(contractSource, "migrate", []string{fmt.Sprintf(`"\"%s\""`, amountOfTokens), fmt.Sprintf(`"\"%s\""`, data.AeAddress), fmt.Sprintf(`"\"%s\""`, data.Signature), fmt.Sprintf(`"\"%s\""`, hash), fmt.Sprintf(`"\"%s\""`, strconv.Itoa(leafIndex)), fmt.Sprintf(`"\"%s\""`, siblingsAsStr)})
+		callData, err := compiler.EncodeCalldata(contractSource, "migrate", []string{fmt.Sprintf(`"\"%s\""`, migrationInfo.Balance), fmt.Sprintf(`"\"%s\""`, data.AeAddress), fmt.Sprintf(`"\"%s\""`, data.Signature), fmt.Sprintf(`"\"%s\""`, migrationInfo.Hash), fmt.Sprintf(`"\"%s\""`, strconv.Itoa(migrationInfo.Leaf_index)), fmt.Sprintf(`"\"%s\""`, siblingsAsStr)})
 		if err != nil {
 			log.Printf("[ERROR] EncodeCalldata! %s\n", err)
 			http.Error(w, fmt.Sprintf("Cannot encode call data. %s.", http.StatusText(500)), 500)

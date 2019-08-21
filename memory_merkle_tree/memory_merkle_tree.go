@@ -67,14 +67,9 @@ func (tree *MerkleTree) resizeVertically() {
 func createParent(left, right *Node) *Node {
 	parentNode := &Node{
 		hash:   crypto.Keccak256Hash(left.hash[:], right.hash[:]),
-		// hash:   crypto.Keccak256Hash([]byte(left.hash.Hex()), []byte(right.hash.Hex())),
 		Parent: nil,
 		index:  right.index / 2, // Parent index is always the current node index divided by two
 	}
-
-	// fmt.Printf("===>   left leaf hash: %s\n", left.hash.Hex())
-	// fmt.Printf("===>   right leaf hash: %s\n", right.hash.Hex())
-	// fmt.Printf("===>   root hash: %s\n", parentNode.hash.Hex())
 
 	left.Parent = parentNode
 	right.Parent = parentNode
