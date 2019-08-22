@@ -165,7 +165,7 @@ func GetInfoByEthAddress(router chi.Router, tree *postgre.PostgresMerkleTree) ch
 
 func getInfoByEthAddress(tree *postgre.PostgresMerkleTree) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		appUtils.LogRequest(req, "/info/{ethAddress}")
+		
 
 		type hashResponse struct {
 			Index    int    `json:"index"`
@@ -176,9 +176,12 @@ func getInfoByEthAddress(tree *postgre.PostgresMerkleTree) http.HandlerFunc {
 
 		ethAddress := chi.URLParam(req, "ethAddress")
 		if ethAddress == "" {
+			appUtils.LogRequest(req, fmt.Sprintf("/info/%s", "missing_eth_address"))
 			http.Error(w, "Invalid request! Missing eth address!", 400)
 			return
 		}
+
+		appUtils.LogRequest(req, fmt.Sprintf("/info/%s", ethAddress))
 
 		// hash, index, tokens, _ := tree.GetByEthAddress(strings.ToLower(ethAddress))
 		migrationInfo := tree.GetByEthAddress(strings.ToLower(ethAddress))

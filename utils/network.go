@@ -32,7 +32,7 @@ func LogRequest(req *http.Request, route string) {
 		// return
 	}
 
-	logStr := fmt.Sprintf("IP: %s, Route: %s\n", ip, route)
+	logStr := fmt.Sprintf("IP: %v, Route: %s", ip, route)
 
 	log.Printf(logStr)
 	go writeLogToFile(logStr)
@@ -50,5 +50,4 @@ func writeLogToFile(data string) {
 	defer file.Close()
 
 	file.WriteString(fmt.Sprintln(fmt.Sprintf("%d:%d:%d:%d | ", t.Hour(), t.Minute(), t.Second(), t.Nanosecond()), data))
-	// log.SetOutput(file)
 }
