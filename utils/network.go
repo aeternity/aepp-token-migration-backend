@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -49,5 +50,20 @@ func writeLogToFile(data string) {
 	}
 	defer file.Close()
 
-	file.WriteString(fmt.Sprintln(fmt.Sprintf("%d:%d:%d:%d | ", t.Hour(), t.Minute(), t.Second(), t.Nanosecond()), data))
+	hour := strconv.Itoa(t.Hour())
+	if len(hour) == 1 {
+		hour = fmt.Sprintf("0%v", hour)
+	}
+
+	minutes := strconv.Itoa(t.Minute())
+	if len(minutes) == 1 {
+		minutes = fmt.Sprintf("0%v", minutes)
+	}
+
+	seconds := strconv.Itoa(t.Second())
+	if len(seconds) == 1 {
+		seconds = fmt.Sprintf("0%v", seconds)
+	}
+
+	file.WriteString(fmt.Sprintln(fmt.Sprintf("%v:%v:%v:%d | ", hour, minutes, seconds, t.Nanosecond()), data))
 }
