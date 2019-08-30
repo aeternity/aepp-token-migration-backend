@@ -1,0 +1,74 @@
+contract TokenMigration =
+
+    record state = 
+        { root_hash: string, 
+          temp_root: string,
+          index: int }
+
+    entrypoint init(root_hash: string) : state = 
+        { root_hash = root_hash,
+          temp_root = root_hash,
+          index = 0 }
+
+    // eth_addr_str = "0XSDFDEHGEH" uppercase eth addr
+    // stateful entrypoint migrate(amountOfTokens: string, aeAddress: string, leafIndex: int, siblings: list(string), eth_addr_str: string, eth_address: bytes(20), sig: bytes(65), msgHash: hash) =
+    stateful entrypoint migrate(amountOfTokens: string, aeAddress: string, leafIndex: int, siblings: list(string), eth_addr_str: string, eth_address: bytes(20)) =
+
+        amountOfTokens
+
+    entrypoint getSigner(msgHash: hash, sig: bytes(65)) =
+        Crypto.ecrecover_secp256k1(msgHash, sig)
+
+    function transfer(to: string, amount: int) = ()
+
+    function passBytes(addr: bytes(20)) = ()
+
+    stateful entrypoint containedInTree(ethAddr: string, tokens: string, i: int, siblings: list(string) ) =
+        let data = String.concat(ethAddr, ":")
+        let data = String.concat(data, tokens)
+        let data = Bytes.to_str(String.sha3(data)) // hash -> str
+
+        put(state{temp_root = data})
+        put(state{index = i})
+        map_action(some_func, siblings)
+
+        (state.temp_root == state.root_hash)
+
+    stateful function map_action(f : 'a => 'b, l : list('a)) : list('b) =
+        switch(l)
+            [] => []
+            e :: l' => f(e) :: map_action(f, l')
+
+    stateful function some_func(el: string) =
+
+        // want to pass 'index' like param, not like state variable, any suggestions?
+        // 'temp_root' too 
+        // because now I should refactor current code, every request should hold own 'index' and 'temp_root', something like this: map(caller, index), map(caller, temp_root)
+
+        if(state.index mod 2 == 1)
+            put(state{temp_root = Bytes.to_str(String.sha3(String.concat(el, state.temp_root)))})
+        else
+            put(state{temp_root = Bytes.to_str(String.sha3(String.concat(state.temp_root, el)))})
+
+        put(state{ index = state.index / 2 })
+
+        ()
+
+    stateful function withdraw(amount: int) =
+        // only_owner()
+        amount
+
+    // helpers
+    // entrypoint getHash(ethAddr: string, balance: string) =
+    //     let temp = String.concat(ethAddr, ":")
+    //     let temp = String.concat(temp, balance)
+    //     Bytes.to_str(String.sha3(temp))
+
+    // entrypoint genRoot(left: string, right: string) =
+    //     let temp = String.concat(left, right)
+    //     Bytes.to_str(String.sha3(temp))
+
+    // entrypoint genHash(left: string, right: string) =
+    //     let temp = String.concat(left, right)
+    //     let a = String.sha3(temp)
+    //     String.sha3(String.concat(Bytes.to_str(a), Bytes.to_str(a)) )

@@ -1,13 +1,13 @@
-// Package memory implements merkle tree stored in the memory of the system
-package memory
+// Package editedTree implements merkle tree stored in the memory of the system
+package editedtree
 
 import (
 	"errors"
 	"fmt"
 	// "github.com/LimeChain/merkletree"
-	merkletree "aepp-token-migration-backend/types"
+	"aepp-token-migration-backend/types"
 	
-	"github.com/ethereum/go-ethereum/common"
+	// "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"math"
 	"strings"
@@ -20,14 +20,14 @@ const (
 
 // Node is implementation of types.Node and representation of a single node or leaf in the merkle tree
 type Node struct {
-	hash   common.Hash
+	hash   string
 	index  int
 	Parent *Node
 }
 
 // Hash returns the string representation of the hash of the node
 func (node *Node) Hash() string {
-	return node.hash.Hex()
+	return node.hash
 }
 
 // Index returns the index of this node in its level
@@ -66,14 +66,14 @@ func (tree *MerkleTree) resizeVertically() {
 
 func createParent(left, right *Node) *Node {
 
-	fmt.Println("left:", left.hash.Hex())
-	fmt.Println("right:", right.hash.Hex())
+	// fmt.Println("left:", left.hash.Hex())
+	// fmt.Println("right:", right.hash.Hex())
 
-	fmt.Println("root",crypto.Keccak256Hash([]byte(left.hash.Hex()), []byte(right.hash.Hex())).Hex())
-	fmt.Println("root",crypto.Keccak256Hash(left.hash[:], right.hash[:]).Hex())
+	// fmt.Println("root",crypto.Keccak256Hash([]byte(left.hash.Hex()), []byte(right.hash.Hex())).Hex())
+	// fmt.Println("root",crypto.Keccak256Hash(left.hash[:], right.hash[:]).Hex())
 
 	parentNode := &Node{
-		hash:   crypto.Keccak256Hash(left.hash[:], right.hash[:]),
+		hash:   strings.ToUpper(crypto.Keccak256Hash([]byte(left.hash), []byte(right.hash)).Hex()[2:]),
 		Parent: nil,
 		index:  right.index / 2, // Parent index is always the current node index divided by two
 	}
@@ -174,8 +174,10 @@ func (tree *MerkleTree) getIntermediaryHashesByIndex(index int) (intermediaryHas
 func (tree *MerkleTree) Add(data []byte) (index int, hash string) {
 	h := crypto.Keccak256Hash(data)
 
-	upperCaseHash := strings.ToUpper(h.Hex())
-	upperCaseHash = upperCaseHash[2:]
+	fmt.Println("==> data", string(data))
+	fmt.Println("==> ", h.Hex())
+
+	upperCaseHash := strings.ToUpper(h.Hex()[2:])
 
 	index = tree.Insert(upperCaseHash)
 	
@@ -205,7 +207,8 @@ func (tree *MerkleTree) RawInsert(hash string) (index int, insertedLeaf merkletr
 	index = len(tree.Nodes[0])
 
 	leaf := &Node{
-		common.HexToHash(hash),
+		// common.HexToHash(hash),
+		hash,
 		index,
 		nil,
 	}
@@ -261,11 +264,12 @@ func (tree *MerkleTree) ValidateExistence(original []byte, index int, intermedia
 	if index >= len(tree.Nodes[0]) {
 		return false, errors.New(outOfBounds)
 	}
-	leafHash := crypto.Keccak256Hash(original)
+	leafHash := strings.ToUpper(crypto.Keccak256Hash(original).Hex()[2:])
 
 	treeLeaf := tree.Nodes[0][index]
 
-	if leafHash.Big().Cmp(treeLeaf.hash.Big()) != 0 {
+	// if leafHash.Big().Cmp(treeLeaf.hash.Big()) != 0 {
+	if leafHash != treeLeaf.hash  {
 		// fmt.Println("Error not equal Big")
 		return false, nil
 	}
@@ -273,18 +277,18 @@ func (tree *MerkleTree) ValidateExistence(original []byte, index int, intermedia
 	tempBHash := leafHash
 
 	for _, h := range intermediaryHashes {
-		oppositeHash := common.HexToHash(h)
+		oppositeHash := h // common.HexToHash(h)
 
 		if index%2 == 0 {
-			tempBHash = crypto.Keccak256Hash(tempBHash[:], oppositeHash[:])
+			tempBHash = strings.ToUpper(crypto.Keccak256Hash([]byte(tempBHash), []byte(oppositeHash)).Hex()[2:])
 		} else {
-			tempBHash = crypto.Keccak256Hash(oppositeHash[:], tempBHash[:])
+			tempBHash = strings.ToUpper(crypto.Keccak256Hash([]byte(oppositeHash), []byte(tempBHash)).Hex()[2:])
 		}
 
 		index /= 2
 	}
 
-	return tempBHash.Big().Cmp(tree.RootNode.hash.Big()) == 0, nil
+	return tempBHash == tree.RootNode.hash, nil
 
 }
 

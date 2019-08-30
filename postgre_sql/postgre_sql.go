@@ -36,10 +36,13 @@ const (
 		PRIMARY KEY (hash)
 	  )`  // 53 ?
 	QueryGetByEthAddress = `SELECT * FROM token_migration
-	where lower(eth_address) = $1`
+	where lower(eth_address) = lower($1)`
 	QuerySetMigratedToSuccess = `UPDATE public.token_migration
 	SET migrated = '1', migrate_tx_hash = $2, ae_address = $3
-	WHERE lower(eth_address) = $1;`
+	WHERE lower(eth_address) = lower($1);`
+	QueryResetMigrationStatus = `UPDATE public.token_migration
+	SET migrated = '0', migrate_tx_hash = '', ae_address = ''
+	WHERE lower(eth_address) = lower($1);`
 )
 
 type PostgresMerkleTree struct {
@@ -82,6 +85,22 @@ func (tree *PostgresMerkleTree) SetMigratedToSuccess(ethAddress string, txHash s
 	_, err := tree.db.Exec(QuerySetMigratedToSuccess, ethAddress, txHash, aeAddress)
 	if err != nil {
 		log.Printf("[SetMigratedToSuccess] ", err.Error())
+	}
+
+	tree.mutex.Unlock()
+}
+
+// ResetMigrationStatus develop route, reset migration status to FALSE, delete tx_hash and ae address
+func (tree *PostgresMerkleTree) ResetMigrationStatus(ethAddress string) {
+	if ethAddress == ""  {
+		log.Printf("[SetMigratedToSuccess] Invalid attempt to set migration status! eth address: %s", ethAddress)
+		return
+	}
+
+	tree.mutex.Lock()
+	_, err := tree.db.Exec(QueryResetMigrationStatus, ethAddress)
+	if err != nil {
+		log.Printf("[ResetMigrationStatus] ", err.Error())
 	}
 
 	tree.mutex.Unlock()

@@ -16,7 +16,7 @@ import (
 // AddTokenOwner add token owner to DB with given params: eht address, token amount
 func AddTokenOwner(router chi.Router, tree *postgre.PostgresMerkleTree) chi.Router {
 
-	router.Post("/owner", addTokenOwner(tree))
+	router.Post("/oowner", addTokenOwner(tree))
 
 	return router
 }

@@ -2,11 +2,13 @@ package utils
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -66,4 +68,43 @@ func writeLogToFile(data string) {
 	}
 
 	file.WriteString(fmt.Sprintln(fmt.Sprintf("%v:%v:%v:%d | ", hour, minutes, seconds, t.Nanosecond()), data))
+}
+
+// GetContractSource get contract source from the provided URL
+func GetContractSource(contractRawUrlGit string) string {
+
+	if contractRawUrlGit == "" {
+		log.Fatalln("Provide url git repo")
+		dat, err := ioutil.ReadFile("contract.aes")
+		if err != nil {
+			log.Println(err)
+			return ""
+		}
+
+		// fmt.Println(string(dat))
+		// fmt.Println()
+
+		return string(dat)
+	}
+
+	resp, err := http.Get(contractRawUrlGit)
+	if err != nil {
+		log.Printf("Somthing went wrong! Error: %s", err)
+		return ""
+	}
+
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Somthing went wrong! Error: %s", err)
+		return ""
+	}
+
+	return string(body)
+}
+
+// PreHashFormat prepare string format before hashing
+func PreHashFormat(address string, amount string) string {
+	return strings.ToUpper(fmt.Sprintf("%s:%s", address, amount))
 }

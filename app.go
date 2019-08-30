@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	// "io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -11,21 +11,25 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/joho/godotenv"
 
-	memory "aepp-token-migration-backend/memory_merkle_tree"
+	// memory "aepp-token-migration-backend/memory_merkle_tree"
+	memory "aepp-token-migration-backend/editedTree"
 	db "aepp-token-migration-backend/postgre_sql"
 	baseapi "aepp-token-migration-backend/rest_api/base"
 	"aepp-token-migration-backend/rest_api/validator"
 	"aepp-token-migration-backend/rest_api/owner"
+	"aepp-token-migration-backend/rest_api/temp"
 	"aepp-token-migration-backend/middleware"
+	appUtils "aepp-token-migration-backend/utils"
 )
 
 func main() {
 	connectionString, port, secretKey, contractRawUrl, aeContractAddress, aeNodeUrl := loadEnv()
-	contractSource := getContractSource(contractRawUrl)
+	contractSource := appUtils.GetContractSource(contractRawUrl)
+	// contractSource := appUtils.GetContractSource("")
 
-	fmt.Println(port)
-	fmt.Println(aeContractAddress)
-	fmt.Println(contractSource)
+	// fmt.Println(contractRawUrl)
+	// fmt.Println(aeContractAddress)
+	// fmt.Println(contractSource)
 
 	tree := db.LoadMerkleTree(memory.NewMerkleTree(), connectionString)
 
@@ -51,6 +55,9 @@ func main() {
 
 	// migrate gets additional info like hash, index, number of tokens by eth address
 	baseapi.Migrate(router, tree, secretKey, contractSource, aeContractAddress, aeNodeUrl)
+
+	// TODO: delete me !!!!
+	temp.ResetMirgationStatus(router, tree)
 
 	fmt.Printf("Server start on port: %d\n", port)
 	strPort := fmt.Sprintf(":%d", port)
@@ -80,34 +87,34 @@ func loadEnv() (connectrinStr string, port int, secretKey string, contractRawUrl
 	return connectionString, port, secretKey, contractRawUrl, aeContractAddress, aeNodeUrl
 }
 
-func getContractSource(contractRawUrlGit string) string {
+// func getContractSource(contractRawUrlGit string) string {
 
-	if contractRawUrlGit == "" {
-		return `contract TokenMigration =
-			type state = ()
+// 	if contractRawUrlGit == "" {
+// 		return `contract TokenMigration =
+// 			type state = ()
 		
-			entrypoint migrate(amountOfTokens: int, aeAddress: string, sig: string, h: string, leafIndex: int, siblings: string) =
-				require(verify(h, sig), "Invalid signature!")
-				transfer(aeAddress, amountOfTokens)
-				()
+// 			entrypoint migrate(amountOfTokens: int, aeAddress: string, sig: string, h: string, leafIndex: int, siblings: string) =
+// 				require(verify(h, sig), "Invalid signature!")
+// 				transfer(aeAddress, amountOfTokens)
+// 				()
 		
-			function verify(h: string, sig: string) : bool = true
-			function transfer(to: string, amount: int) = ()`
-	}
+// 			function verify(h: string, sig: string) : bool = true
+// 			function transfer(to: string, amount: int) = ()`
+// 	}
 
-	resp, err := http.Get(contractRawUrlGit)
-	if err != nil {
-		fmt.Printf("Somthing went wrong! Error: %s", err)
-		return ""
-	}
+// 	resp, err := http.Get(contractRawUrlGit)
+// 	if err != nil {
+// 		fmt.Printf("Somthing went wrong! Error: %s", err)
+// 		return ""
+// 	}
 
-	defer resp.Body.Close()
+// 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Printf("Somthing went wrong! Error: %s", err)
-		return ""
-	}
+// 	body, err := ioutil.ReadAll(resp.Body)
+// 	if err != nil {
+// 		fmt.Printf("Somthing went wrong! Error: %s", err)
+// 		return ""
+// 	}
 
-	return string(body)
-}
+// 	return string(body)
+// }

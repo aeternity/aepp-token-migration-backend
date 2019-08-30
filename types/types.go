@@ -63,3 +63,16 @@ type MigrationInfo struct {
 	Migrated int
 	Migrate_tx_hash string
 }
+
+// ContractTxInfo show deploy info
+type ContractTxInfo struct {
+	CallerId    string   `json: "caller_id"`
+	CallerNonce string   `json: "caller_nonce"`
+	ContractId  string   `json: "contract_id"`
+	GasPrice    string   `json: "gas_price"`
+	GasUsed     string   `json: "gas_used"`
+	Height      int      `json: "height"`
+	Log         []string `json: "log"`
+	ReturnType  string   `json: "return_type"`
+	ReturnValue string   `json: "return_value"`
+}
