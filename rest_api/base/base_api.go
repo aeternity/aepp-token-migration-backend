@@ -286,29 +286,37 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		if showPassedParams {
 			fmt.Println()
 			fmt.Println("--> passed VALUES <<--")
-			fmt.Println(migrationInfo.Balance)
-			fmt.Println(data.AeAddress)
-			fmt.Println(migrationInfo.Leaf_index)
-			fmt.Println(siblingsAsStr)
-			fmt.Println(ethAddress)
+			fmt.Println("balance:", migrationInfo.Balance)
+			fmt.Println("ae addr", data.AeAddress)
+			fmt.Println("leaf inx:", migrationInfo.Leaf_index)
+			fmt.Println("siblings", siblingsAsStr)
+			fmt.Println("eth addr:", ethAddress)
 			fmt.Println()
-			fmt.Println(ethAddress[2:])
-			fmt.Println([]byte(ethAddress)[2:])
-			fmt.Println()
-			fmt.Println(signature)
-			fmt.Println([]byte(signature))
-			fmt.Println()
-			fmt.Println(data.MessageDigest[2:])
-			fmt.Println([]byte(data.MessageDigest)[2:])
+			fmt.Println("ethAddress[2:]:", ethAddress[2:])
+			// fmt.Println([]byte(ethAddress)[2:])
+			// fmt.Println()
+			fmt.Println("signature:", signature)
+			// fmt.Println([]byte(signature))
+			// fmt.Println()
+			fmt.Println("data.MessageDigest[2:]:", data.MessageDigest[2:])
+			// fmt.Println([]byte(data.MessageDigest)[2:])
 			fmt.Println("----- END -----")
 			fmt.Println()
 		}
 
+		// tokenAmount, err := strconv.Atoi(migrationInfo.Balance)
+		// if err != nil {
+		// 	log.Printf("[ERROR] Parse owner's tokens! %s\n", err)
+		// 	http.Error(w, fmt.Sprintf("Cannot encode call data. %s.", http.StatusText(500)), 500)
+		// 	return
+		// }
+
 		callData, err := compiler.EncodeCalldata(
 			contractSource,
 			"migrate",
-			[]string{fmt.Sprintf(`"%s"`, migrationInfo.Balance),
-				fmt.Sprintf(`"%s"`, data.AeAddress),
+			[]string{fmt.Sprintf(`%v`, migrationInfo.Balance),
+				fmt.Sprintf(`%v`, data.AeAddress),
+				// data.AeAddress,
 				fmt.Sprintf(`%s`, strconv.Itoa(migrationInfo.Leaf_index)), 
 				fmt.Sprintf(`%s`, siblingsAsStr),
 				fmt.Sprintf(`"%s"`, ethAddress),

@@ -1,52 +1,65 @@
-contract TokenMigration =
+payable contract TokenMigration =
 
     record state = 
         { root_hash: string, 
-          temp_root: string,
+          map_temp_root: map(address,string),
           migrations_count: int,
-          index: int }
+          owner: address,
+          map_index: map(address, int) }
 
     entrypoint init(root_hash: string, count: int) : state = 
         { root_hash = root_hash,
-          temp_root = root_hash,
+          map_temp_root = {},
           migrations_count = count,
-          index = 0 }
+          owner = Call.origin,
+          map_index = {} }
 
     // eth_addr_str = "0XSDFDEHGEH" uppercase eth addr
-    stateful entrypoint migrate(amountOfTokens: string, aeAddress: string, leafIndex: int, siblings: list(string), eth_addr_str: string, eth_address: bytes(20), sig: bytes(65), msgHash: hash) =
+    payable stateful entrypoint migrate(amount_of_tokens: int, ae_address: address, leaf_index: int, siblings: list(string), eth_addr_str: string, eth_address: bytes(20), sig: bytes(65), msg_hash: hash) =
 
         // why this does not work? 
-        // require(containedInTree(String.concat("0X", Bytes.to_str(eth_address)), amountOfTokens, leafIndex, siblings), "From provided data, cannot be generated same root!")
-        require(containedInTree(eth_addr_str, amountOfTokens, leafIndex, siblings), "From provided data, cannot be generated same root!")
+        // require(contained_in_merkle_tree(String.concat("0X", Bytes.to_str(eth_address)), amount_of_tokens, leaf_index, siblings), "From provided data, cannot be generated same root!")
 
-        let recovered_address = getSigner(msgHash, sig)
+        require(contained_in_merkle_tree(eth_addr_str, Int.to_str(amount_of_tokens), leaf_index, siblings), "From provided data, cannot be generated same root")
+
+        let recovered_address = get_signer(msg_hash, sig)
         let are_equal = switch (recovered_address)
                             None => false
                             Some(recovered) => recovered == eth_address
 
-        require(are_equal, "Mismatch between passed eth address and recevored one!")
+        require(are_equal, "Mismatch between passed eth address and recevored one")
+
+        require(Address.is_payable(ae_address), "Passed AE address is not payable")
 
         put(state{migrations_count = state.migrations_count + 1})
-        //  tr(aeAddress, amountOfTokens)
+        //transfer(ae_address, amount_of_tokens)
         state.migrations_count
 
-    entrypoint getSigner(msgHash: hash, sig: bytes(65)) =
-        Crypto.ecrecover_secp256k1(msgHash, sig)
+    entrypoint get_signer(msg_hash: hash, sig: bytes(65)) =
+        Crypto.ecrecover_secp256k1(msg_hash, sig)
 
-    entrypoint get_migrations_count() = state.migrations_count
+    payable stateful function transfer(to: address, amount: int) =
+        Chain.spend(to, amount)
+        amount
 
-    function tr(to: string, amount: int) = ()
-
-    stateful entrypoint containedInTree(ethAddr: string, tokens: string, i: int, siblings: list(string) ) =
-        let data = String.concat(ethAddr, ":")
+    stateful entrypoint contained_in_merkle_tree(eth_addr: string, tokens: string, i: int, siblings: list(string) ) =
+        let data = String.concat(eth_addr, ":")
         let data = String.concat(data, tokens)
         let data = Bytes.to_str(String.sha3(data)) // hash -> str
+
+        //let data = Bytes.to_str(String.sha3(String.concat(eth_addr, ":", tokens))) // not working ?!
         
-        put(state{temp_root = data})
-        put(state{index = i})
+        put(state{map_temp_root[Call.caller] = data})
+        put(state{map_index[Call.caller] = i})
         map_action(some_func, siblings)
 
-        (state.temp_root == state.root_hash)
+        let contained_in_tree = state.map_temp_root[Call.caller] == state.root_hash
+
+        // delete current request data
+        put(state{map_temp_root = Map.delete(Call.caller, state.map_temp_root)})
+        put(state{map_index = Map.delete(Call.caller, state.map_index)})
+
+        contained_in_tree
 
     stateful function map_action(f : 'a => 'b, l : list('a)) : list('b) =
         switch(l)
@@ -59,22 +72,40 @@ contract TokenMigration =
         // 'temp_root' too 
         // because now I should refactor current code, every request should hold own 'index' and 'temp_root', something like this: map(caller, index), map(caller, temp_root)
 
-        if(state.index mod 2 == 1)
-            put(state{temp_root = Bytes.to_str(String.sha3(String.concat(el, state.temp_root)))})
+        if(state.map_index[Call.caller] mod 2 == 1)
+            put(state{map_temp_root[Call.caller] = Bytes.to_str(String.sha3(String.concat(el, state.map_temp_root[Call.caller])))})
         else
-            put(state{temp_root = Bytes.to_str(String.sha3(String.concat(state.temp_root, el)))})
+            put(state{map_temp_root[Call.caller] = Bytes.to_str(String.sha3(String.concat(state.map_temp_root[Call.caller], el)))})
 
-        put(state{ index = state.index / 2 })
+        put(state{ map_index[Call.caller] = state.map_index[Call.caller] / 2 })
 
         ()
 
-    stateful function withdraw(amount: int) =
-        // only_owner()
-        amount
+    payable stateful entrypoint deposit() = Call.value
 
+    payable stateful entrypoint withdraw(amount: int) =
+        only_owner()
+        require(amount =< balance(), "Insufficient funds")
+        Chain.spend(state.owner, amount)
+
+    stateful entrypoint update_root(new_root: string) =
+        only_owner()
+        put(state{root_hash = new_root})
+
+    stateful entrypoint update_migrations_count(new_count: int) =
+        only_owner()
+        put(state{migrations_count = new_count})
+
+    entrypoint balance() = Contract.balance
+
+    entrypoint get_migrations_count() = state.migrations_count
+
+    function only_owner() =
+        require(Call.caller == state.owner, "Owner require")
+        
     // helpers
-    // entrypoint getHash(ethAddr: string, balance: string) =
-    //     let temp = String.concat(ethAddr, ":")
+    // entrypoint getHash(eth_addr: string, balance: string) =
+    //     let temp = String.concat(eth_addr, ":")
     //     let temp = String.concat(temp, balance)
     //     Bytes.to_str(String.sha3(temp))
 
