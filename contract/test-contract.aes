@@ -3,31 +3,45 @@ contract TokenMigration =
     record state = 
         { root_hash: string, 
           temp_root: string,
+          migrations_count: int,
           index: int }
 
-    entrypoint init(root_hash: string) : state = 
+    entrypoint init(root_hash: string, count: int) : state = 
         { root_hash = root_hash,
           temp_root = root_hash,
+          migrations_count = count,
           index = 0 }
 
     // eth_addr_str = "0XSDFDEHGEH" uppercase eth addr
-    // stateful entrypoint migrate(amountOfTokens: string, aeAddress: string, leafIndex: int, siblings: list(string), eth_addr_str: string, eth_address: bytes(20), sig: bytes(65), msgHash: hash) =
-    stateful entrypoint migrate(amountOfTokens: string, aeAddress: string, leafIndex: int, siblings: list(string), eth_addr_str: string, eth_address: bytes(20)) =
+    stateful entrypoint migrate(amountOfTokens: string, aeAddress: string, leafIndex: int, siblings: list(string), eth_addr_str: string, eth_address: bytes(20), sig: bytes(65), msgHash: hash) =
 
-        amountOfTokens
+        // why this does not work? 
+        // require(containedInTree(String.concat("0X", Bytes.to_str(eth_address)), amountOfTokens, leafIndex, siblings), "From provided data, cannot be generated same root!")
+        require(containedInTree(eth_addr_str, amountOfTokens, leafIndex, siblings), "From provided data, cannot be generated same root!")
+
+        let recovered_address = getSigner(msgHash, sig)
+        let are_equal = switch (recovered_address)
+                            None => false
+                            Some(recovered) => recovered == eth_address
+
+        require(are_equal, "Mismatch between passed eth address and recevored one!")
+
+        put(state{migrations_count = state.migrations_count + 1})
+        //  tr(aeAddress, amountOfTokens)
+        state.migrations_count
 
     entrypoint getSigner(msgHash: hash, sig: bytes(65)) =
         Crypto.ecrecover_secp256k1(msgHash, sig)
 
-    function transfer(to: string, amount: int) = ()
+    entrypoint get_migrations_count() = state.migrations_count
 
-    function passBytes(addr: bytes(20)) = ()
+    function tr(to: string, amount: int) = ()
 
     stateful entrypoint containedInTree(ethAddr: string, tokens: string, i: int, siblings: list(string) ) =
         let data = String.concat(ethAddr, ":")
         let data = String.concat(data, tokens)
         let data = Bytes.to_str(String.sha3(data)) // hash -> str
-
+        
         put(state{temp_root = data})
         put(state{index = i})
         map_action(some_func, siblings)

@@ -25,10 +25,9 @@ import (
 func main() {
 	connectionString, port, secretKey, contractRawUrl, aeContractAddress, aeNodeUrl := loadEnv()
 	contractSource := appUtils.GetContractSource(contractRawUrl)
-	// contractSource := appUtils.GetContractSource("")
 
+	// contractSource := appUtils.GetContractSource("")
 	// fmt.Println(contractRawUrl)
-	// fmt.Println(aeContractAddress)
 	// fmt.Println(contractSource)
 
 	tree := db.LoadMerkleTree(memory.NewMerkleTree(), connectionString)
@@ -86,35 +85,3 @@ func loadEnv() (connectrinStr string, port int, secretKey string, contractRawUrl
 
 	return connectionString, port, secretKey, contractRawUrl, aeContractAddress, aeNodeUrl
 }
-
-// func getContractSource(contractRawUrlGit string) string {
-
-// 	if contractRawUrlGit == "" {
-// 		return `contract TokenMigration =
-// 			type state = ()
-		
-// 			entrypoint migrate(amountOfTokens: int, aeAddress: string, sig: string, h: string, leafIndex: int, siblings: string) =
-// 				require(verify(h, sig), "Invalid signature!")
-// 				transfer(aeAddress, amountOfTokens)
-// 				()
-		
-// 			function verify(h: string, sig: string) : bool = true
-// 			function transfer(to: string, amount: int) = ()`
-// 	}
-
-// 	resp, err := http.Get(contractRawUrlGit)
-// 	if err != nil {
-// 		fmt.Printf("Somthing went wrong! Error: %s", err)
-// 		return ""
-// 	}
-
-// 	defer resp.Body.Close()
-
-// 	body, err := ioutil.ReadAll(resp.Body)
-// 	if err != nil {
-// 		fmt.Printf("Somthing went wrong! Error: %s", err)
-// 		return ""
-// 	}
-
-// 	return string(body)
-// }

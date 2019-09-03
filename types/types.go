@@ -55,24 +55,38 @@ type FullMerkleTree interface {
 
 // MigrationInfo is a token owner info
 type MigrationInfo struct {
-	Eth_address string
-	Hash string
-	Leaf_index int
-	Balance string
-	Ae_address string
-	Migrated int
+	Eth_address     string
+	Hash            string
+	Leaf_index      int
+	Balance         string
+	Ae_address      string
+	Migrated        int
 	Migrate_tx_hash string
+}
+
+type ContractTxInfoWrapper struct {
+	CallInfo struct {
+		CallerId    string   `json:"caller_id"`
+		CallerNonce int   `json:"caller_nonce"`
+		ContractId  string   `json:"contract_id"`
+		GasPrice    int   `json:"gas_price"`
+		GasUsed     int   `json:"gas_used"`
+		Height      int      `json:"height"`
+		//Log         []string `json:"log"`
+		ReturnType  string   `json:"return_type"`
+		ReturnValue string   `json:"return_value"`
+	} `json:"call_info"`
 }
 
 // ContractTxInfo show deploy info
 type ContractTxInfo struct {
-	CallerId    string   `json: "caller_id"`
-	CallerNonce string   `json: "caller_nonce"`
-	ContractId  string   `json: "contract_id"`
-	GasPrice    string   `json: "gas_price"`
-	GasUsed     string   `json: "gas_used"`
-	Height      int      `json: "height"`
-	Log         []string `json: "log"`
-	ReturnType  string   `json: "return_type"`
-	ReturnValue string   `json: "return_value"`
+	CallerId    string   `json:"caller_id"`
+	CallerNonce string   `json:"caller_nonce"`
+	ContractId  string   `json:"contract_id"`
+	GasPrice    string   `json:"gas_price"`
+	GasUsed     string   `json:"gas_used"`
+	Height      int      `json:"height"`
+	Log         []string `json:"log"`
+	ReturnType  string   `json:"return_type"`
+	ReturnValue string   `json:"return_value"`
 }

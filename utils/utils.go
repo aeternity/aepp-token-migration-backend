@@ -74,15 +74,12 @@ func writeLogToFile(data string) {
 func GetContractSource(contractRawUrlGit string) string {
 
 	if contractRawUrlGit == "" {
-		log.Fatalln("Provide url git repo")
-		dat, err := ioutil.ReadFile("contract.aes")
+		log.Println("Provide url git repo")
+		dat, err := ioutil.ReadFile("contract/test-contract.aes")
 		if err != nil {
 			log.Println(err)
 			return ""
 		}
-
-		// fmt.Println(string(dat))
-		// fmt.Println()
 
 		return string(dat)
 	}
