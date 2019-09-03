@@ -1,3 +1,4 @@
+// TODO: del me
 package temp
 
 import (
@@ -11,7 +12,7 @@ import (
 	"github.com/go-chi/render"
 )
 
-// GetInfoByEthAddress gets additional info like hash, index, number of tokens by eth address
+// ResetMirgationStatus developer test function
 func ResetMirgationStatus(router chi.Router, tree *postgre.PostgresMerkleTree) chi.Router {
 
 	router.Get("/reset/{ethAddress}", resetMirgationStatus(tree))

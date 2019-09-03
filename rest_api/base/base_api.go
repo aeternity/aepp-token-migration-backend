@@ -401,9 +401,21 @@ func waitForTransaction(tree *postgre.PostgresMerkleTree, aeNode *aeternity.Node
 
 		tree.SetMigratedToSuccess(ethAddress, hash, aeAddress)
 		notifyBackendless(aeAddress, ethAddress, transferredTokens, hash, 5000+migrationsCountAsInt)
+	} else if txInfo.CallInfo.ReturnType == "revert" {
+		response, err := compiler.DecodeCallResult("revert", txInfo.CallInfo.ReturnValue, "migrate", contractSource, aeternity.Config.Compiler.Backend)
+		if err != nil {
+			log.Println("Decode Call Result", err)
+			return "Error", errors.New("Error")
+		}
+
+		errorMessage := fmt.Sprint(response)
+		// log.Println("===> REVERT")
+		// log.Println(errorMessage)
+
+		return errorMessage, nil
 	}
 
-	log.Println("[INFO] Transaction was found at", height, "microblockHash", microblockHash)
+	log.Printf("[INFO] Tx Hash: [%s] Transaction was found at [%v] microblockHash: [%v]", hash, height, microblockHash)
 	return txInfo.CallInfo.ReturnType, nil
 }
 
