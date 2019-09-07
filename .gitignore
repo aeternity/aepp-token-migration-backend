@@ -13,3 +13,4 @@
 .env
 api.txt
 *.log
+aepp-token-migration-backend

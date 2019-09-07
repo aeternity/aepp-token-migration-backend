@@ -186,7 +186,7 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 	return func(w http.ResponseWriter, req *http.Request) {
 
 		appUtils.LogRequest(req, "/migrate")
-
+		
 		type reqData struct {
 			EthPubKey     string `json:"ethPubKey"`
 			MessageDigest string `json:"messageDigest"`
@@ -314,10 +314,9 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		callData, err := compiler.EncodeCalldata(
 			contractSource,
 			"migrate",
-			[]string{fmt.Sprintf(`%v`, migrationInfo.Balance),
-				fmt.Sprintf(`%v`, data.AeAddress),
-				// data.AeAddress,
-				fmt.Sprintf(`%s`, strconv.Itoa(migrationInfo.Leaf_index)), 
+			[]string{ fmt.Sprintf(`%s`, migrationInfo.Balance),
+				fmt.Sprintf(`%s`, data.AeAddress),
+				fmt.Sprintf(`%d`, migrationInfo.Leaf_index), 
 				fmt.Sprintf(`%s`, siblingsAsStr),
 				fmt.Sprintf(`"%s"`, ethAddress),
 				fmt.Sprintf(`#%s`, ethAddress[2:]),
@@ -335,7 +334,8 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		var abiVersion uint16 = 1                      // aeternity.Config.Client.Contracts.ABIVersion
 		var amount *big.Int = big.NewInt(0)            // aeternity.Config.Client.Contracts.Amount
 		var gasPrice *big.Int = big.NewInt(1000000000) // aeternity.Config.Client.Contracts.GasPrice
-		var gas *big.Int = utils.NewIntFromUint64(1e5) // aeternity.Config.Client.Contracts.Gas
+		// var gas big.Int = aeternity.Config.Client.Contracts.Gas // utils.NewIntFromUint64(1e6) // 
+		var gas *big.Int = utils.NewIntFromUint64(1e6) // aeternity.Config.Client.Contracts.Gas // 
 		var fee *big.Int = utils.NewIntFromUint64(665480000000000)
 
 		tx, err := context.ContractCallTx(aeContractAddress, callData, abiVersion, *amount, *gas, *gasPrice, *fee)
@@ -417,8 +417,6 @@ func waitForTransaction(tree *postgre.PostgresMerkleTree, aeNode *aeternity.Node
 		}
 
 		errorMessage := fmt.Sprint(response)
-		// log.Println("===> REVERT")
-		// log.Println(errorMessage)
 
 		return errorMessage, nil
 	}
@@ -477,8 +475,8 @@ func notifyBackendless(aeAddress string, ethAddress string, transferedTokens str
 func getUserToken(url string) string {
 
 	type dbLoginCredentials struct {
-		Login    string `json: "login"`
-		Password string `json: "password"`
+		Login    string `json:"login"`
+		Password string `json:"password"`
 	}
 
 	// var dbCredentials = dbLoginCredentials{Login: "test@ae.migration.lima", Password: "pas$w0rd!sS3cr3t."}

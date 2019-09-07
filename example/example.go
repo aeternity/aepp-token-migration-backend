@@ -22,7 +22,7 @@ import (
 
 	"strings"
 
-	"github.com/ethereum/go-ethereum/crypto"
+	// "github.com/ethereum/go-ethereum/crypto"
 )
 
 func main() {
@@ -186,41 +186,41 @@ func getHeight(aeNode *aeternity.Node) (h uint64) {
 	return
 }
 
-func testKeccak() {
+// func testKeccak() {
 
-	ethAddrLeft := "0xdD13a2E199121E53A32BECB588b8c9b4dAd6BA0E"
-	tokensLeft := "80856967965736379088896"
-	dataLeft := appUtils.PreHashFormat(ethAddrLeft, tokensLeft)
-	left := strings.ToUpper(crypto.Keccak256Hash([]byte(dataLeft)).Hex()[2:])
+// 	ethAddrLeft := "0xdD13a2E199121E53A32BECB588b8c9b4dAd6BA0E"
+// 	tokensLeft := "80856967965736379088896"
+// 	dataLeft := appUtils.PreHashFormat(ethAddrLeft, tokensLeft)
+// 	left := strings.ToUpper(crypto.Keccak256Hash([]byte(dataLeft)).Hex()[2:])
 
-	fmt.Println("left hash: ", left)
+// 	fmt.Println("left hash: ", left)
 
-	ethAddrRight := "0x19Ae739E15ab9C68AA136c4e841C4762693e5811"
-	tokensRight := "337858228211646684200960"
-	dataRight := appUtils.PreHashFormat(ethAddrRight, tokensRight)
-	right := strings.ToUpper(crypto.Keccak256Hash([]byte(dataRight)).Hex()[2:])
+// 	ethAddrRight := "0x19Ae739E15ab9C68AA136c4e841C4762693e5811"
+// 	tokensRight := "337858228211646684200960"
+// 	dataRight := appUtils.PreHashFormat(ethAddrRight, tokensRight)
+// 	right := strings.ToUpper(crypto.Keccak256Hash([]byte(dataRight)).Hex()[2:])
 
-	fmt.Println("right hash: ", right)
+// 	fmt.Println("right hash: ", right)
 
-	left = "7941FE89909B7A465D1B6626932AB309B41D4DF3A20C16319FDFCF6FC886FF9D"
-	right = "118AFD786E4E19451CC92C5313D46EB0DB928E023D9D2080D896BA32490EF87B"
+// 	left = "7941FE89909B7A465D1B6626932AB309B41D4DF3A20C16319FDFCF6FC886FF9D"
+// 	right = "118AFD786E4E19451CC92C5313D46EB0DB928E023D9D2080D896BA32490EF87B"
 
-	// hash := fmt.Sprintf("%s%s", ethAddr, tokens)
+// 	// hash := fmt.Sprintf("%s%s", ethAddr, tokens)
 
-	h := crypto.Keccak256Hash([]byte(left), []byte(right))
+// 	h := crypto.Keccak256Hash([]byte(left), []byte(right))
 
-	// hh := crypto.Keccak256Hash([]byte(strings.ToUpper(ethAddr)), []byte(strings.ToUpper(tokens)))
-	// hhh := crypto.Keccak256Hash([]byte("0x603339837faa719f6313adacd7863f455211fb8e6b3f7054c000d80fb3ae7f9e"), []byte("0x603339837faa719f6313adacd7863f455211fb8e6b3f7054c000d80fb3ae7f9e"))
-	// a := strings.ToUpper("603339837faa719f6313adacd7863f455211fb8e6b3f7054c000d80fb3ae7f9e")
-	// hhhh := crypto.Keccak256Hash([]byte(a), []byte(a))
+// 	// hh := crypto.Keccak256Hash([]byte(strings.ToUpper(ethAddr)), []byte(strings.ToUpper(tokens)))
+// 	// hhh := crypto.Keccak256Hash([]byte("0x603339837faa719f6313adacd7863f455211fb8e6b3f7054c000d80fb3ae7f9e"), []byte("0x603339837faa719f6313adacd7863f455211fb8e6b3f7054c000d80fb3ae7f9e"))
+// 	// a := strings.ToUpper("603339837faa719f6313adacd7863f455211fb8e6b3f7054c000d80fb3ae7f9e")
+// 	// hhhh := crypto.Keccak256Hash([]byte(a), []byte(a))
 
-	fmt.Println("h", strings.ToUpper(h.Hex()[2:]))
-	// fmt.Println("lower", h.Hex())
-	// fmt.Println("upper", hh.Hex())
-	// fmt.Println("hhh", hhh.Hex())
-	// fmt.Println("hhhh", hhhh.Hex())
+// 	fmt.Println("h", strings.ToUpper(h.Hex()[2:]))
+// 	// fmt.Println("lower", h.Hex())
+// 	// fmt.Println("upper", hh.Hex())
+// 	// fmt.Println("hhh", hhh.Hex())
+// 	// fmt.Println("hhhh", hhhh.Hex())
 
-}
+// }
 
 // func main() {
 

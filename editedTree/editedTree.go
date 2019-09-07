@@ -9,6 +9,7 @@ import (
 	
 	// "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	// "go-ethereum/crypto"
 	"math"
 	"strings"
 	"sync"
@@ -73,7 +74,7 @@ func createParent(left, right *Node) *Node {
 	// fmt.Println("root",crypto.Keccak256Hash(left.hash[:], right.hash[:]).Hex())
 
 	parentNode := &Node{
-		hash:   strings.ToUpper(crypto.Keccak256Hash([]byte(left.hash), []byte(right.hash)).Hex()[2:]),
+		hash:  strings.ToUpper(crypto.Keccak256Hash([]byte(left.hash), []byte(right.hash)).Hex()[2:]),
 		Parent: nil,
 		index:  right.index / 2, // Parent index is always the current node index divided by two
 	}
