@@ -24,11 +24,11 @@ import (
 
 func main() {
 	connectionString, port, secretKey, contractRawUrl, aeContractAddress, aeNodeUrl := loadEnv()
-	contractSource := appUtils.GetContractSource(contractRawUrl)
+	// contractSource := appUtils.GetContractSource(contractRawUrl)
 
-	// contractSource := appUtils.GetContractSource("")
-	// fmt.Println(contractRawUrl)
-	// fmt.Println(contractSource)
+	contractSource := appUtils.GetContractSource("")
+	fmt.Println(contractRawUrl)
+	fmt.Println(contractSource)
 
 	tree := db.LoadMerkleTree(memory.NewMerkleTree(), connectionString)
 

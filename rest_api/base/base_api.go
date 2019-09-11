@@ -237,8 +237,6 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 			return
 		}
 
-		// // uncomment me
-
 		siblings, err := tree.IntermediaryHashesByIndex(migrationInfo.Leaf_index)
 		if err != nil {
 			log.Printf("[ERROR] IntermediaryHashesByIndex! %s\n", err)
@@ -323,12 +321,17 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 				fmt.Sprintf(`#%s`, ethAddress[2:]),
 				fmt.Sprintf(`#%s`, signature),
 				fmt.Sprintf(`#%s`, data.MessageDigest[2:])},
-			aeternity.Config.Compiler.Backend)
+				aeternity.Config.Compiler.Backend) // aeternity.Config.Compiler.Backend
 		if err != nil {
 			log.Printf("[ERROR] EncodeCalldata! %s\n", err)
 			http.Error(w, fmt.Sprintf("Cannot encode call data. %s.", http.StatusText(500)), 500)
 			return
 		}
+
+		// fmt.Println()
+		// fmt.Println("EncodeCalldata")
+		// fmt.Println(callData)
+		// fmt.Println()
 
 		context, n := aeternity.NewContextFromURL(aeNodeUrl, account.Address, false)
 
@@ -373,7 +376,7 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		// 	return
 		// }
 		
-		_, hash, _, err = aeternity.SignBroadcastTransaction(tx, account, n, "au_devnet") // signedTxStr, hash, signature, err
+		_, txHash, _, err = aeternity.SignBroadcastTransaction(tx, account, n, "ae_devnet") // signedTxStr, hash, signature, err
 		if err != nil {
 			log.Printf("[ERROR] SignBroadcastTransaction! %s\n", err)
 			http.Error(w, http.StatusText(500), 500)
@@ -388,7 +391,7 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		// go waitForTransaction(tree, node, hash, data.EthPubKey, data.AeAddress, migrationInfo.Balance, compiler, contractSource)
 		status, _ := waitForTransaction(tree, node, hash, data.EthPubKey, data.AeAddress, migrationInfo.Balance, compiler, contractSource)
 
-		render.JSON(w, req, response{TxHash: hash, Status: status})
+		render.JSON(w, req, response{TxHash: txHash, Status: status})
 	}
 }
 
