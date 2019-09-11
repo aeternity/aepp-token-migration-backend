@@ -1,4 +1,4 @@
-// Package editedTree implements merkle tree stored in the memory of the system
+// Package editedtree implements merkle tree stored in the memory of the system
 package editedtree
 
 import (
@@ -10,6 +10,7 @@ import (
 	// "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	// "go-ethereum/crypto"
+
 	"math"
 	"strings"
 	"sync"
@@ -66,12 +67,6 @@ func (tree *MerkleTree) resizeVertically() {
 }
 
 func createParent(left, right *Node) *Node {
-
-	// fmt.Println("left:", left.hash.Hex())
-	// fmt.Println("right:", right.hash.Hex())
-
-	// fmt.Println("root",crypto.Keccak256Hash([]byte(left.hash.Hex()), []byte(right.hash.Hex())).Hex())
-	// fmt.Println("root",crypto.Keccak256Hash(left.hash[:], right.hash[:]).Hex())
 
 	parentNode := &Node{
 		hash:  strings.ToUpper(crypto.Keccak256Hash([]byte(left.hash), []byte(right.hash)).Hex()[2:]),
@@ -214,8 +209,6 @@ func (tree *MerkleTree) RawInsert(hash string) (index int, insertedLeaf merkletr
 		nil,
 	}
 
-	// fmt.Printf("===>   leaf hash: %s\n", leaf.hash.Hex())
-
 	tree.Nodes[0] = append(tree.Nodes[0], leaf)
 
 	return index, leaf
@@ -278,7 +271,7 @@ func (tree *MerkleTree) ValidateExistence(original []byte, index int, intermedia
 	tempBHash := leafHash
 
 	for _, h := range intermediaryHashes {
-		oppositeHash := h // common.HexToHash(h)
+		oppositeHash := h
 
 		if index%2 == 0 {
 			tempBHash = strings.ToUpper(crypto.Keccak256Hash([]byte(tempBHash), []byte(oppositeHash)).Hex()[2:])

@@ -1,13 +1,14 @@
 package baseapi
 
 import (
-	"aepp-sdk-go/aeternity"
 	"bytes"
 	"errors"
 
-	// "github.com/aeternity/aepp-sdk-go/aeternity"
+	"github.com/aeternity/aepp-sdk-go/aeternity"
+	"github.com/aeternity/aepp-sdk-go/utils"
+	// "aepp-sdk-go/aeternity"
+	// "aepp-sdk-go/utils"
 
-	"aepp-sdk-go/utils"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -329,7 +330,7 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 			return
 		}
 
-		context := aeternity.NewContextFromURL(aeNodeUrl, account.Address, false)
+		context, n := aeternity.NewContextFromURL(aeNodeUrl, account.Address, false)
 
 		var abiVersion uint16 = 1                      // aeternity.Config.Client.Contracts.ABIVersion
 		var amount *big.Int = big.NewInt(0)            // aeternity.Config.Client.Contracts.Amount
@@ -345,7 +346,7 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 			return
 		}
 
-		signedTx, hash, _, err := aeternity.SignHashTx(account, &tx, "ae_devnet") // signedTx, hash, signature, err
+		signedTx, hash, _, err := aeternity.SignHashTx(account, tx, "ae_devnet") // signedTx, hash, signature, err
 		if err != nil {
 			log.Printf("[ERROR] SignHashTx! %s\n", err)
 			http.Error(w, http.StatusText(500), 500)
@@ -353,21 +354,31 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		}
 
 		// transform the tx into a tx_base64encodedstring so you can HTTP POST it
-		signedTxStr, err := aeternity.SerializeTx(&signedTx)
+		signedTxStr, err := aeternity.SerializeTx(signedTx)
 		if err != nil {
 			log.Printf("[ERROR] SerializeTx! %s\n", err)
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
 
-		err = aeternity.BroadcastTransaction(node, signedTxStr)
+
+		// TODO: del me
+		fmt.Println(signedTxStr)
+
+		
+		// err = aeternity.BroadcastTransaction(node, signedTxStr)
+		// if err != nil {
+		// 	log.Printf("[ERROR] BroadcastTransaction! %s\n", err)
+		// 	http.Error(w, http.StatusText(500), 500)
+		// 	return
+		// }
+		
+		_, hash, _, err = aeternity.SignBroadcastTransaction(tx, account, n, "au_devnet") // signedTxStr, hash, signature, err
 		if err != nil {
-			log.Printf("[ERROR] BroadcastTransaction! %s\n", err)
+			log.Printf("[ERROR] SignBroadcastTransaction! %s\n", err)
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
-
-		// // END uncomment me
 
 		type response struct {
 			TxHash string `json:"txHash"`
@@ -602,190 +613,3 @@ func pushToBackendless(url string, userTkn string, aeAddress string, ethAddress 
 		return
 	}
 }
-
-// TODO: del-me
-
-// func addDataHandler(tree merkletree.ExternalMerkleTree) http.HandlerFunc {
-// 	return func(w http.ResponseWriter, r *http.Request) {
-
-// 		appUtils.LogRequest(r, "post /")
-
-// 		decoder := json.NewDecoder(r.Body)
-// 		var b addDataRequest
-// 		err := decoder.Decode(&b)
-// 		if err != nil {
-// 			render.JSON(w, r, addDataResponse{MerkleAPIResponse{false, err.Error()}, -1, ""})
-// 			return
-// 		}
-
-// 		if b.Data == "" {
-// 			render.JSON(w, r, addDataResponse{MerkleAPIResponse{false, "Missing data field"}, -1, ""})
-// 			return
-// 		}
-// 		index, hash := tree.Add([]byte(b.Data))
-// 		render.JSON(w, r, addDataResponse{MerkleAPIResponse{true, ""}, index, hash})
-// 	}
-// }
-
-// func waitForTransaction1(tree *postgre.PostgresMerkleTree, aeNode *aeternity.Node, hash string, ethAddress string, aeAddress string) { // (height uint64, microblockHash string, err error)
-// 	// height := getHeight(aeNode)
-// 	// height, microblockHash, err := aeternity.WaitForTransactionForXBlocks(aeNode, hash, height + 100)
-// 	// if err != nil {
-// 	// 	// Sometimes, the tests want the tx to fail. Return the err to let them know.
-// 	// 	log.Println("Wait for transaction", err)
-// 	// 	return
-// 	// }
-
-// 	tree.SetMigratedToSuccess(ethAddress, hash, aeAddress)
-// 	log.Println("[INFO] Transaction was found at", 666, "0xMicroblockHash", "0xMicroblockHash")
-// }
-
-// func migrate1(tree *postgre.PostgresMerkleTree, secretKey string, contractSource string, aeContractAddress string, aeNodeUrl string) http.HandlerFunc {
-// 	return func(w http.ResponseWriter, req *http.Request) {
-
-// 		appUtils.LogRequest(req, "/migrate1")
-
-// 		type reqData struct {
-// 			EthPubKey     string `json:"ethPubKey"`
-// 			MessageDigest string `json:"messageDigest"`
-// 			Signature     string `json:"signature"`
-// 			AeAddress     string `json:"aeAddress"`
-// 		}
-
-// 		decoder := json.NewDecoder(req.Body)
-// 		var data reqData
-// 		err := decoder.Decode(&data)
-// 		if err != nil {
-// 			fmt.Printf("[ERROR] Cannot parse request body! %s\n", err)
-// 			http.Error(w, "Cannot parse request body!", 400)
-// 			return
-// 		}
-
-// 		if data.EthPubKey == "" {
-// 			log.Printf("[ERROR] Missing EthPubKey! Migrate procedure should NOT start!\n")
-// 			http.Error(w, "Missing EthPubKey! Migrate procedure should NOT start!", 400)
-// 			return
-// 		}
-
-// 		if data.MessageDigest == "" {
-// 			log.Printf("[ERROR] Missing MessageDigest! Migrate procedure should NOT start!\n")
-// 			http.Error(w, "Missing MessageDigest! Migrate procedure should NOT start!", 400)
-// 			return
-// 		}
-
-// 		if data.Signature == "" {
-// 			log.Printf("[ERROR] Missing Signature! Migrate procedure should NOT start!\n")
-// 			http.Error(w, "Missing Signature! Migrate procedure should NOT start!", 400)
-// 			return
-// 		}
-
-// 		if data.AeAddress == "" {
-// 			log.Printf("[ERROR] Missing AE address! Migrate procedure should NOT start!\n")
-// 			http.Error(w, "Missing AE address! Migrate procedure should NOT start!", 400)
-// 			return
-// 		}
-
-// 		// get additional data from db
-// 		migrationInfo := tree.GetByEthAddress(data.EthPubKey)
-
-// 		if migrationInfo.Migrated == 1 {
-// 			log.Println("[ERROR] Eth address already migrate its tokens!")
-// 			http.Error(w, "Eth address already migrate its tokens!", 400)
-// 			return
-// 		}
-
-// 		// // uncomment me
-
-// 		// siblings, err := tree.IntermediaryHashesByIndex(migrationInfo.Leaf_index)
-// 		// if err != nil {
-// 		// 	log.Printf("[ERROR] IntermediaryHashesByIndex! %s\n", err)
-// 		// 	http.Error(w, http.StatusText(500), 500)
-// 		// 	return
-// 		// }
-
-// 		// for i, j := 0, len(siblings)-1; i < j; i, j = i+1, j-1 {
-// 		// 	siblings[i], siblings[j] = siblings[j], siblings[i]
-// 		// }
-
-// 		// siblingsAsStr := strings.Join(siblings, ",")
-
-// 		// account, err := aeternity.AccountFromHexString(secretKey)
-// 		// if err != nil {
-// 		// 	log.Printf("[ERROR] Account error! %s\n", err)
-// 		// 	http.Error(w, http.StatusText(500), 500)
-// 		// 	return
-// 		// }
-
-// 		// fmt.Println(1111)
-
-// 		node := aeternity.NewNode(aeNodeUrl, false)
-// 		// compiler := aeternity.NewCompiler(aeternity.Config.Client.Contracts.CompilerURL, false)
-
-// 		// ethAddress := strings.ToUpper(data.EthPubKey)
-
-// 		// callData, err := compiler.EncodeCalldata(
-// 		// 	contractSource,
-// 		// 	"migrate",
-// 		// 	[]string{ migrationInfo.Balance,
-// 		// 			  fmt.Sprintf(`"\"%s\""`, data.AeAddress),
-// 		// 			  strconv.Itoa(migrationInfo.Leaf_index),
-// 		// 			  fmt.Sprintf(`"\"%s\""`, siblingsAsStr),
-// 		// 			  fmt.Sprintf(`"\"%s\""`, ethAddress),
-// 		// 			  fmt.Sprintf(`"\"%s\""`, []byte(ethAddress)[2:]),
-// 		// 			  fmt.Sprintf(`"\"%s\""`, []byte(data.Signature)[2:]),
-// 		// 			  fmt.Sprintf(`"\"%s\""`, []byte(data.MessageDigest)[2:])})
-// 		// if err != nil {
-// 		// 	log.Printf("[ERROR] EncodeCalldata! %s\n", err)
-// 		// 	http.Error(w, fmt.Sprintf("Cannot encode call data. %s.", http.StatusText(500)), 500)
-// 		// 	return
-// 		// }
-
-// 		// context := aeternity.NewContextFromURL(aeNodeUrl, account.Address, false)
-
-// 		// var abiVersion uint16 = 1                      // aeternity.Config.Client.Contracts.ABIVersion
-// 		// var amount *big.Int = big.NewInt(1)            // aeternity.Config.Client.Contracts.Amount
-// 		// var gasPrice *big.Int = big.NewInt(1000000000) // aeternity.Config.Client.Contracts.GasPrice
-// 		// var gas *big.Int = utils.NewIntFromUint64(1e5) // aeternity.Config.Client.Contracts.Gas
-// 		// var fee *big.Int = utils.NewIntFromUint64(665480000000000)
-
-// 		// tx, err := context.ContractCallTx(aeContractAddress, callData, abiVersion, *amount, *gas, *gasPrice, *fee)
-// 		// if err != nil {
-// 		// 	log.Printf("[ERROR] ContractCallTx! %s\n", err)
-// 		// 	http.Error(w, http.StatusText(500), 500)
-// 		// 	return
-// 		// }
-
-// 		// signedTx, hash, _, err := aeternity.SignHashTx(account, &tx, "ae_devnet") // signedTx, hash, signature, err
-// 		// if err != nil {
-// 		// 	log.Printf("[ERROR] SignHashTx! %s\n", err)
-// 		// 	http.Error(w, http.StatusText(500), 500)
-// 		// 	return
-// 		// }
-
-// 		// // transform the tx into a tx_base64encodedstring so you can HTTP POST it
-// 		// signedTxStr, err := aeternity.SerializeTx(&signedTx)
-// 		// if err != nil {
-// 		// 	log.Printf("[ERROR] SerializeTx! %s\n", err)
-// 		// 	http.Error(w, http.StatusText(500), 500)
-// 		// 	return
-// 		// }
-
-// 		// err = aeternity.BroadcastTransaction(node, signedTxStr)
-// 		// if err != nil {
-// 		// 	log.Printf("[ERROR] BroadcastTransaction! %s\n", err)
-// 		// 	http.Error(w, http.StatusText(500), 500)
-// 		// 	return
-// 		// }
-
-// 		// // END uncomment me
-
-// 		type response struct {
-// 			TxHash string
-// 		}
-
-// 		hash := "0x_some_tx_hash"
-// 		render.JSON(w, req, response{TxHash: hash})
-
-// 		go waitForTransaction1(tree, node, hash, data.EthPubKey, data.AeAddress)
-// 	}
-// }

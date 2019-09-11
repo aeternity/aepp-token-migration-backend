@@ -14,13 +14,10 @@ import (
 	types "aepp-token-migration-backend/types"
 	appUtils "aepp-token-migration-backend/utils"
 
-	// "github.com/aeternity/aepp-sdk-go/aeternity"
-	"aepp-sdk-go/aeternity"
-
-	// "github.com/aeternity/aepp-sdk-go/utils"
-	"aepp-sdk-go/utils"
-
-	"strings"
+	"github.com/aeternity/aepp-sdk-go/aeternity"
+	"github.com/aeternity/aepp-sdk-go/utils"
+	// "aepp-sdk-go/aeternity"
+	// "aepp-sdk-go/utils"
 
 	// "github.com/ethereum/go-ethereum/crypto"
 )
@@ -55,7 +52,7 @@ func deploy() {
 
 	node := aeternity.NewNode(nodeURL, false)
 	// fmt.Printf("COMPILER: %s\n", aeternity.Config.Client.Contracts.CompilerURL)
-	CONTRACT_SOURCE_URL_GIT_RAW := "https://raw.githubusercontent.com/LimeChain/aepp-token-migration-smart-contract/master/contracts/TokenMigration.aes" 
+	CONTRACT_SOURCE_URL_GIT_RAW := "https://raw.githubusercontent.com/LimeChain/aepp-token-migration-smart-contract/master/contracts/TokenMigration.aes"
 	contractSource := appUtils.GetContractSource(CONTRACT_SOURCE_URL_GIT_RAW)
 	compiler := aeternity.NewCompiler(aeternity.Config.Client.Contracts.CompilerURL, false)
 	contractByteCode, err := compiler.CompileContract(contractSource, aeternity.Config.Compiler.Backend)

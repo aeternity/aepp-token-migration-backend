@@ -2,23 +2,23 @@ package main
 
 import (
 	"fmt"
-	// "io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"strconv"
-	"net/http"
 
 	"github.com/go-chi/chi"
 	"github.com/joho/godotenv"
 
 	// memory "aepp-token-migration-backend/memory_merkle_tree"
-	memory "aepp-token-migration-backend/editedTree"
+	memory "aepp-token-migration-backend/editedtree"
+
+	"aepp-token-migration-backend/middleware"
 	db "aepp-token-migration-backend/postgre_sql"
 	baseapi "aepp-token-migration-backend/rest_api/base"
-	"aepp-token-migration-backend/rest_api/validator"
 	"aepp-token-migration-backend/rest_api/owner"
 	"aepp-token-migration-backend/rest_api/temp"
-	"aepp-token-migration-backend/middleware"
+	"aepp-token-migration-backend/rest_api/validator"
 	appUtils "aepp-token-migration-backend/utils"
 )
 
@@ -45,7 +45,7 @@ func main() {
 
 	// add token owner to DB with given params: eht address, token amount
 	owner.AddTokenOwner(router, tree)
-	
+
 	// gets hash at index 'X'
 	baseapi.GetHashByLeafIndex(router, tree)
 
