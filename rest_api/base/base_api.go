@@ -23,12 +23,6 @@ import (
 	"github.com/go-chi/render"
 )
 
-var backend = "fate" // aeternity.Config.Compiler.Backend
-var abiVersion uint16 = 3 // aeternity.Config.Client.Contracts.ABIVersion // aevm = 1 || fate = 3
-// var vmVersion uint16 = 5 // aeternity.Config.Client.Contracts.VMVersion // fate = 5
-
-
-var userToken string = "89B28858-5FFA-0E4C-FF73-480646005600"
 var migrationsCount int
 
 // MerkleTreeStatus takes pointer to initialized router and the merkle tree and exposes Rest API routes for getting of status
@@ -171,15 +165,18 @@ func getInfoByEthAddress(tree *postgre.PostgresMerkleTree) http.HandlerFunc {
 	}
 }
 
-func Migrate(router chi.Router, tree *postgre.PostgresMerkleTree, secretKey string, contractSource string, aeContractAddress string, aeNodeUrl string) chi.Router {
+// Migrate process request data and passed it to smart contract, after successfull response notified backendless listener
+func Migrate(router chi.Router, tree *postgre.PostgresMerkleTree, secretKey string, contractSource string, aeContractAddress string, aeNodeURL string) chi.Router {
 
-	router.Post("/migrate", migrate(tree, secretKey, contractSource, aeContractAddress, aeNodeUrl))
+	router.Post("/migrate", migrate(tree, secretKey, contractSource, aeContractAddress, aeNodeURL))
 
 	return router
 }
 
-func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource string, aeContractAddress string, aeNodeUrl string) http.HandlerFunc {
+func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource string, aeContractAddress string, aeNodeURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+
+		envConfig := appUtils.GetEnvConfig()
 
 		appUtils.LogRequest(req, "/migrate")
 		
@@ -260,7 +257,7 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 			return
 		}
 
-		node := aeternity.NewNode(aeNodeUrl, false)
+		node := aeternity.NewNode(aeNodeURL, false)
 		compiler := aeternity.NewCompiler(aeternity.Config.Client.Contracts.CompilerURL, false)
 
 		signature := data.Signature[2:]
@@ -274,14 +271,14 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 				fmt.Sprintf(`%d`, migrationInfo.Leaf_index), 
 				fmt.Sprintf(`%s`, siblingsAsStr),
 				fmt.Sprintf(`#%s`, signature)},
-				backend)
+				envConfig.AEBackend)
 		if err != nil {
 			log.Printf("[ERROR] EncodeCalldata! %s\n", err)
 			http.Error(w, fmt.Sprintf("Cannot encode call data. %s.", http.StatusText(500)), 500)
 			return
 		}
 
-		context, n := aeternity.NewContextFromURL(aeNodeUrl, account.Address, false)
+		context, node := aeternity.NewContextFromURL(aeNodeURL, account.Address, false)
 
 		
 		var amount *big.Int = big.NewInt(0)            // aeternity.Config.Client.Contracts.Amount
@@ -290,14 +287,14 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		var gas *big.Int = utils.NewIntFromUint64(1e6) // aeternity.Config.Client.Contracts.Gas // 
 		var fee *big.Int = utils.NewIntFromUint64(665480000000000)
 
-		tx, err := context.ContractCallTx(aeContractAddress, callData, abiVersion, *amount, *gas, *gasPrice, *fee)
+		tx, err := context.ContractCallTx(aeContractAddress, callData, envConfig.AEAbiVersion, *amount, *gas, *gasPrice, *fee)
 		if err != nil {
 			log.Printf("[ERROR] ContractCallTx! %s\n", err)
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
 
-		_, txHash, _, err := aeternity.SignBroadcastTransaction(tx, account, n, "ae_devnet") // signedTxStr, hash, signature, err
+		_, txHash, _, err := aeternity.SignBroadcastTransaction(tx, account, node, envConfig.AENetworkID) // signedTxStr, hash, signature, err
 		if err != nil {
 			log.Printf("[ERROR] SignBroadcastTransaction! %s\n", err)
 			http.Error(w, http.StatusText(500), 500)
@@ -323,13 +320,15 @@ func waitForTransaction(tree *postgre.PostgresMerkleTree, aeNode *aeternity.Node
 		return "Error", errors.New("Error")
 	}
 
-	txInfo, err := getTxInfo(hash)
+	envConfig := appUtils.GetEnvConfig()
+
+	txInfo, err := getTxInfo(hash, envConfig.AENodeUrl)
 	if err != nil {
 		log.Println("getTxInfo", err)
 		return "Error", errors.New("Error")
 	} else if txInfo.CallInfo.ReturnType == "ok" {
 
-		migrationsCount, err := compiler.DecodeCallResult("ok", txInfo.CallInfo.ReturnValue, "migrate", contractSource, backend)
+		migrationsCount, err := compiler.DecodeCallResult("ok", txInfo.CallInfo.ReturnValue, "migrate", contractSource, envConfig.AEBackend)
 		if err != nil {
 			log.Println("Decode Call Result", err)
 			return "Error", errors.New("Error")
@@ -343,9 +342,9 @@ func waitForTransaction(tree *postgre.PostgresMerkleTree, aeNode *aeternity.Node
 		}
 
 		tree.SetMigratedToSuccess(ethAddress, hash, aeAddress)
-		notifyBackendless(aeAddress, ethAddress, transferredTokens, hash, 5000+migrationsCountAsInt)
+		notifyBackendless(envConfig, aeAddress, ethAddress, transferredTokens, hash, migrationsCountAsInt)
 	} else if txInfo.CallInfo.ReturnType == "revert" {
-		response, err := compiler.DecodeCallResult("revert", txInfo.CallInfo.ReturnValue, "migrate", contractSource, backend)
+		response, err := compiler.DecodeCallResult("revert", txInfo.CallInfo.ReturnValue, "migrate", contractSource, envConfig.AEBackend)
 		if err != nil {
 			log.Println("Decode Call Result", err)
 			return "Error", errors.New("Error")
@@ -356,13 +355,13 @@ func waitForTransaction(tree *postgre.PostgresMerkleTree, aeNode *aeternity.Node
 		return errorMessage, nil
 	}
 
-	log.Printf("[INFO] Tx Hash: [%s] Transaction was found at [%v] microblockHash: [%v]", hash, height, microblockHash)
+	log.Printf("[INFO] Tx Hash: [ %s ] Transaction was found at [ %v ] microblockHash: [ %v ]", hash, height, microblockHash)
 	return txInfo.CallInfo.ReturnType, nil
 }
 
-func getTxInfo(txHash string) (*types.ContractTxInfoWrapper, error) {
+func getTxInfo(txHash string, nodeURL string) (*types.ContractTxInfoWrapper, error) {
 
-	resp, err := http.Get(fmt.Sprintf("http://localhost:3001/v2/transactions/%s/info", txHash))
+	resp, err := http.Get(fmt.Sprintf("%s/v2/transactions/%s/info", nodeURL, txHash))
 	if err != nil {
 		log.Printf("[ERROR] txInfo.MarshalJSON()! %s\n", err)
 		return nil, errors.New("Cannot get tx info")
@@ -391,32 +390,23 @@ func getHeight(aeNode *aeternity.Node) (h uint64) {
 	return
 }
 
-func notifyBackendless(aeAddress string, ethAddress string, transferedTokens string, txHash string, migrationsCount int) {
+func notifyBackendless(envConfig types.EnvConfig, aeAddress string, ethAddress string, transferredTokens string, txHash string, migrationsCount int) {
 
-	BL_ID := "CBD0589C-4114-2D15-FF41-6FC7F3EE8800"
-	BL_KEY := "39EBBD6D-5A94-0739-FF27-B17F3957B700"
-	BL_URL := fmt.Sprintf("https://api.backendless.com/%s/%s", BL_ID, BL_KEY)
+	backendlessPushURL := fmt.Sprintf("%s/%s/%s", envConfig.BackendlessConfig.Url, envConfig.BackendlessConfig.ID, envConfig.BackendlessConfig.Key)
 
-	if userToken == "" {
-		userToken = getUserToken(BL_URL)
+	if envConfig.BackendlessConfig.UserToken == "" {
+		userToken := getUserToken(envConfig.BackendlessConfig.Url, envConfig.BackendlessConfig.Login, envConfig.BackendlessConfig.Password)
+		appUtils.UpdateBackendlessUserToken(userToken)
 	}
 
-	pushToBackendless(BL_URL, userToken, aeAddress, ethAddress, transferedTokens, txHash, migrationsCount)
+	pushToBackendless(backendlessPushURL, envConfig.BackendlessConfig.UserToken, envConfig.BackendlessConfig.Table, aeAddress, ethAddress, transferredTokens, txHash, migrationsCount, envConfig.BackendlessConfig.Login, envConfig.BackendlessConfig.Password)
 }
 
-// TODO: get or pass db credentials
-func getUserToken(url string) string {
-
-	type dbLoginCredentials struct {
-		Login    string `json:"login"`
-		Password string `json:"password"`
-	}
-
-	var dbCredentials = dbLoginCredentials{Login: "test@limechain.tech", Password: "ksdlfkaj1salfdj."}
+func getUserToken(url string, login string, password string) string {
 
 	dataReq := map[string]interface{}{
-		"login":    dbCredentials.Login,
-		"password": dbCredentials.Password,
+		"login":    login,
+		"password": password,
 	}
 
 	bytesRepresentation, err := json.Marshal(dataReq)
@@ -456,9 +446,7 @@ func getUserToken(url string) string {
 	return data.UserToken
 }
 
-func pushToBackendless(url string, userTkn string, aeAddress string, ethAddress string, transferedTokens string, txHash string, migrationsCount int) {
-
-	table := "TestMigrationsLima"
+func pushToBackendless(url string, userTkn string, table string, aeAddress string, ethAddress string, transferredTokens string, txHash string, migrationsCount int, backendlessLogin string, backendlessPassword string) {
 
 	type backendlessData struct {
 		PubKey          string `json:"pubKey"`
@@ -469,13 +457,13 @@ func pushToBackendless(url string, userTkn string, aeAddress string, ethAddress 
 		TransactionHash string `json:"transactionHash"`
 	}
 
-	tokens, _ := strconv.Atoi(transferedTokens)
+	tokens, _ := strconv.Atoi(transferredTokens)
 
 	requestData := &backendlessData{
 		PubKey:          aeAddress,       // ae address
 		From:            ethAddress,      // eth address
 		Value:           tokens,          // migrated tokens
-		DeliveryPeriod:  3,               // delivery phase ?
+		DeliveryPeriod:  3,               // delivery phase ?!?!
 		Count:           migrationsCount, // migrations count
 		TransactionHash: txHash,          // tx hash
 	}
@@ -504,6 +492,8 @@ func pushToBackendless(url string, userTkn string, aeAddress string, ethAddress 
 		return
 	}
 
+	log.Printf("[INFO] Backendless was notified. Tx Hash: [ %s ]\n", txHash)
+
 	defer resp.Body.Close()
 
 	type BackendlessResp struct {
@@ -525,9 +515,10 @@ func pushToBackendless(url string, userTkn string, aeAddress string, ethAddress 
 	var data BackendlessResp
 	err = decoder.Decode(&data)
 	if err != nil && resp.Status == "400 Bad Request" && strings.Index(err.Error(), "Not existing user token") >= 0 {
-		userToken = getUserToken(url)
-		log.Println("==> GET NEW TOKEN:", userToken)
-		pushToBackendless(url, userToken, aeAddress, ethAddress, transferedTokens, txHash, migrationsCount)
+		userTkn = getUserToken(url, backendlessLogin, backendlessPassword)
+		// TODO: remove this log after development
+		log.Println("==> GET NEW TOKEN:", userTkn)
+		pushToBackendless(url, userTkn, table, aeAddress, ethAddress, transferredTokens, txHash, migrationsCount, backendlessLogin, backendlessPassword)
 		return
 	} else if err != nil {
 		log.Println(err)

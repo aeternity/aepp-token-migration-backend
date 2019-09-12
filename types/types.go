@@ -90,3 +90,27 @@ type ContractTxInfo struct {
 	ReturnType  string   `json:"return_type"`
 	ReturnValue string   `json:"return_value"`
 }
+
+type BackendlessConfig struct {
+	ID string
+	Key string
+	Url string
+	UserToken string
+	Login    string `json:"login"`
+	Password string `json:"password"`
+	Table string
+}
+
+// connectionString, port, secretKey, contractRawUrl, aeContractAddress, aeNodeUrl
+type EnvConfig struct {
+	DbConnectionStr string
+	BackendlessConfig
+	Port int
+	SecretKey string
+	ContractRawUrl string
+	AEContractAddress string
+	AENodeUrl string
+	AENetworkID string
+	AEBackend string
+	AEAbiVersion uint16
+}

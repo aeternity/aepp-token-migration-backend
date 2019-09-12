@@ -2,34 +2,29 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
-	"os"
-	"strconv"
 
 	"github.com/go-chi/chi"
-	"github.com/joho/godotenv"
 
+	memory "aepp-token-migration-backend/editedtree"
 	"aepp-token-migration-backend/middleware"
+	db "aepp-token-migration-backend/postgre_sql"
+	baseapi "aepp-token-migration-backend/rest_api/base"
 	"aepp-token-migration-backend/rest_api/owner"
 	"aepp-token-migration-backend/rest_api/temp"
 	"aepp-token-migration-backend/rest_api/validator"
-	db "aepp-token-migration-backend/postgre_sql"
-	memory "aepp-token-migration-backend/editedtree"
 	appUtils "aepp-token-migration-backend/utils"
-	baseapi "aepp-token-migration-backend/rest_api/base"
 )
 
 func main() {
-	connectionString, port, secretKey, contractRawUrl, aeContractAddress, aeNodeUrl := loadEnv()
-	contractSource := appUtils.GetContractSource(contractRawUrl)
+	envConfig := appUtils.GetEnvConfig()
 
-	// TODO: deleted me after dev
+	contractSource := appUtils.GetContractSource(envConfig.ContractRawUrl)
+
+	// TODO: deleted me after development
 	// contractSource := appUtils.GetContractSource("")
-	// fmt.Println(contractRawUrl)
-	// fmt.Println(contractSource)
 
-	tree := db.LoadMerkleTree(memory.NewMerkleTree(), connectionString)
+	tree := db.LoadMerkleTree(memory.NewMerkleTree(), envConfig.DbConnectionStr)
 
 	// log merkle tree nodes and leafs hashes
 	// fmt.Println(tree)
@@ -53,35 +48,15 @@ func main() {
 	baseapi.GetInfoByEthAddress(router, tree)
 
 	// migrate gets additional info like hash, index, number of tokens by eth address
-	baseapi.Migrate(router, tree, secretKey, contractSource, aeContractAddress, aeNodeUrl)
+	baseapi.Migrate(router, tree, envConfig.SecretKey, contractSource, envConfig.AEContractAddress, envConfig.AENodeUrl)
 
 	// TODO: delete me !!!!
 	temp.ResetMirgationStatus(router, tree)
 
-	fmt.Printf("Server start on port: %d\n", port)
-	strPort := fmt.Sprintf(":%d", port)
+	fmt.Printf("Server start on port: %d\n", envConfig.Port)
+	strPort := fmt.Sprintf(":%d", envConfig.Port)
 	err := http.ListenAndServe(strPort, router)
 	if err != nil {
 		fmt.Printf("Server cannot start has ERROR: %s", err)
 	}
-}
-
-func loadEnv() (connectrinStr string, port int, secretKey string, contractRawUrl string, aeContractAddress string, aeNodeUrl string) {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-
-	connectionString := os.Getenv("CONNECTION_STRING_POSTGRESQL")
-	port, err = strconv.Atoi(os.Getenv("GO_API_PORT"))
-	if err != nil {
-		log.Fatal("Error parsing port!")
-	}
-
-	secretKey = os.Getenv("SECRET_KEY")
-	contractRawUrl = os.Getenv("CONTRACT_SOURCE_URL_GIT_RAW")
-	aeContractAddress = os.Getenv("AE_CONTRACT_TOKEN_MIGRATION_ADDRESS")
-	aeNodeUrl = os.Getenv("AE_NODE_URL")
-
-	return connectionString, port, secretKey, contractRawUrl, aeContractAddress, aeNodeUrl
 }
