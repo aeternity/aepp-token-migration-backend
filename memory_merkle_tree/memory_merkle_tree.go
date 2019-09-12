@@ -4,13 +4,11 @@ package memory
 import (
 	"errors"
 	"fmt"
-	// "github.com/LimeChain/merkletree"
+	
 	merkletree "aepp-token-migration-backend/types"
 	
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	// "go-ethereum/common"
-	// "go-ethereum/crypto"
 
 	"math"
 	"strings"

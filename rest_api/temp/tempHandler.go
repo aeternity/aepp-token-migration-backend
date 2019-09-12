@@ -1,4 +1,4 @@
-// TODO: del me
+// TODO: should be deleted after dev work
 package temp
 
 import (

@@ -52,7 +52,7 @@ func addTokenOwner(tree *postgre.PostgresMerkleTree) http.HandlerFunc {
 			return
 		}
 
-		data := utils.PreHashFormat(reqData.EthAddress, reqData.Balance) // fmt.Sprintf("%s:%s", reqData.EthAddress, reqData.Balance)
+		data := utils.PreHashFormat(reqData.EthAddress, reqData.Balance)
 		index, hash := tree.Add([]byte(data), strings.ToLower(reqData.EthAddress), reqData.Balance, reqData.AeAddress)
 
 		type addOwnerResponse struct {

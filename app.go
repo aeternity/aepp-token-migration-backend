@@ -10,29 +10,29 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/joho/godotenv"
 
-	// memory "aepp-token-migration-backend/memory_merkle_tree"
-	memory "aepp-token-migration-backend/editedtree"
-
 	"aepp-token-migration-backend/middleware"
-	db "aepp-token-migration-backend/postgre_sql"
-	baseapi "aepp-token-migration-backend/rest_api/base"
 	"aepp-token-migration-backend/rest_api/owner"
 	"aepp-token-migration-backend/rest_api/temp"
 	"aepp-token-migration-backend/rest_api/validator"
+	db "aepp-token-migration-backend/postgre_sql"
+	memory "aepp-token-migration-backend/editedtree"
 	appUtils "aepp-token-migration-backend/utils"
+	baseapi "aepp-token-migration-backend/rest_api/base"
 )
 
 func main() {
 	connectionString, port, secretKey, contractRawUrl, aeContractAddress, aeNodeUrl := loadEnv()
-	// contractSource := appUtils.GetContractSource(contractRawUrl)
+	contractSource := appUtils.GetContractSource(contractRawUrl)
 
-	contractSource := appUtils.GetContractSource("")
-	fmt.Println(contractRawUrl)
-	fmt.Println(contractSource)
+	// TODO: deleted me after dev
+	// contractSource := appUtils.GetContractSource("")
+	// fmt.Println(contractRawUrl)
+	// fmt.Println(contractSource)
 
 	tree := db.LoadMerkleTree(memory.NewMerkleTree(), connectionString)
 
-	fmt.Println(tree)
+	// log merkle tree nodes and leafs hashes
+	// fmt.Println(tree)
 	fmt.Printf("root hash: %s\n", tree.Root())
 
 	router := chi.NewRouter()

@@ -4,12 +4,9 @@ package editedtree
 import (
 	"errors"
 	"fmt"
-	// "github.com/LimeChain/merkletree"
-	"aepp-token-migration-backend/types"
 	
-	// "github.com/ethereum/go-ethereum/common"
+	"aepp-token-migration-backend/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	// "go-ethereum/crypto"
 
 	"math"
 	"strings"

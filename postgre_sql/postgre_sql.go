@@ -24,7 +24,7 @@ const (
 		migrated bit NOT NULL,
 		migrate_tx_hash varchar(100) DEFAULT '',
 		PRIMARY KEY (hash)
-	  )`  // 53 ?
+	  )`  
 	CreateIfNotExists = `CREATE TABLE IF NOT EXISTS token_migration (
 		hash varchar(66) NOT NULL,
 		eth_address varchar(42) NOT NULL,
@@ -34,7 +34,7 @@ const (
 		migrated bit NOT NULL,
 		migrate_tx_hash varchar(100) DEFAULT '',
 		PRIMARY KEY (hash)
-	  )`  // 53 ?
+	  )`  
 	QueryGetByEthAddress = `SELECT * FROM token_migration
 	where lower(eth_address) = lower($1)`
 	QuerySetMigratedToSuccess = `UPDATE public.token_migration

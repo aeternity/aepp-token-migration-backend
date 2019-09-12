@@ -27,6 +27,11 @@ import (
 	"github.com/go-chi/render"
 )
 
+var backend = "fate" // aeternity.Config.Compiler.Backend
+var abiVersion uint16 = 3 // aeternity.Config.Client.Contracts.ABIVersion // aevm = 1 || fate = 3
+// var vmVersion uint16 = 5 // aeternity.Config.Client.Contracts.VMVersion // fate = 5
+
+
 var userToken string = "89B28858-5FFA-0E4C-FF73-480646005600"
 var migrationsCount int
 
@@ -41,12 +46,6 @@ func MerkleTreeHashes(treeRouter chi.Router, tree merkletree.ExternalMerkleTree)
 	treeRouter.Get("/siblings/{index}", getIntermediaryHashesHandler(tree))
 	return treeRouter
 }
-
-// MerkleTreeInsert takes pointer to initialized router and the merkle tree and exposes Rest API routes for addition
-// func MerkleTreeInsert(treeRouter chi.Router, tree merkletree.ExternalMerkleTree) chi.Router {
-// 	treeRouter.Post("/", addDataHandler(tree))
-// 	return treeRouter
-// }
 
 // MerkleAPIResponse represents the minimal response structure
 type MerkleAPIResponse struct {
@@ -244,11 +243,6 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 			return
 		}
 
-		// reverse siblings array
-		for i, j := 0, len(siblings)-1; i < j; i, j = i+1, j-1 {
-			siblings[i], siblings[j] = siblings[j], siblings[i]
-		}
-
 		// generate sophia list param
 		siblingsAsStr := "["
 		for index, element := range siblings {
@@ -273,42 +267,8 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		node := aeternity.NewNode(aeNodeUrl, false)
 		compiler := aeternity.NewCompiler(aeternity.Config.Client.Contracts.CompilerURL, false)
 
-
-		ethAddress := strings.ToUpper(data.EthPubKey)
-
 		signature := data.Signature[2:]
 		signature = signature[len(signature)-2:] + signature[:len(signature)-2]
-
-		// TODO: del me
-		showPassedParams := false
-
-		if showPassedParams {
-			fmt.Println()
-			fmt.Println("--> passed VALUES <<--")
-			fmt.Println("balance:", migrationInfo.Balance)
-			fmt.Println("ae addr", data.AeAddress)
-			fmt.Println("leaf inx:", migrationInfo.Leaf_index)
-			fmt.Println("siblings", siblingsAsStr)
-			fmt.Println("eth addr:", ethAddress)
-			fmt.Println()
-			fmt.Println("ethAddress[2:]:", ethAddress[2:])
-			// fmt.Println([]byte(ethAddress)[2:])
-			// fmt.Println()
-			fmt.Println("signature:", signature)
-			// fmt.Println([]byte(signature))
-			// fmt.Println()
-			fmt.Println("data.MessageDigest[2:]:", data.MessageDigest[2:])
-			// fmt.Println([]byte(data.MessageDigest)[2:])
-			fmt.Println("----- END -----")
-			fmt.Println()
-		}
-
-		// tokenAmount, err := strconv.Atoi(migrationInfo.Balance)
-		// if err != nil {
-		// 	log.Printf("[ERROR] Parse owner's tokens! %s\n", err)
-		// 	http.Error(w, fmt.Sprintf("Cannot encode call data. %s.", http.StatusText(500)), 500)
-		// 	return
-		// }
 
 		callData, err := compiler.EncodeCalldata(
 			contractSource,
@@ -317,25 +277,17 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 				fmt.Sprintf(`%s`, data.AeAddress),
 				fmt.Sprintf(`%d`, migrationInfo.Leaf_index), 
 				fmt.Sprintf(`%s`, siblingsAsStr),
-				fmt.Sprintf(`"%s"`, ethAddress),
-				fmt.Sprintf(`#%s`, ethAddress[2:]),
-				fmt.Sprintf(`#%s`, signature),
-				fmt.Sprintf(`#%s`, data.MessageDigest[2:])},
-				aeternity.Config.Compiler.Backend) // aeternity.Config.Compiler.Backend
+				fmt.Sprintf(`#%s`, signature)},
+				backend)
 		if err != nil {
 			log.Printf("[ERROR] EncodeCalldata! %s\n", err)
 			http.Error(w, fmt.Sprintf("Cannot encode call data. %s.", http.StatusText(500)), 500)
 			return
 		}
 
-		// fmt.Println()
-		// fmt.Println("EncodeCalldata")
-		// fmt.Println(callData)
-		// fmt.Println()
-
 		context, n := aeternity.NewContextFromURL(aeNodeUrl, account.Address, false)
 
-		var abiVersion uint16 = 1                      // aeternity.Config.Client.Contracts.ABIVersion
+		
 		var amount *big.Int = big.NewInt(0)            // aeternity.Config.Client.Contracts.Amount
 		var gasPrice *big.Int = big.NewInt(1000000000) // aeternity.Config.Client.Contracts.GasPrice
 		// var gas big.Int = aeternity.Config.Client.Contracts.Gas // utils.NewIntFromUint64(1e6) // 
@@ -349,33 +301,6 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 			return
 		}
 
-		signedTx, hash, _, err := aeternity.SignHashTx(account, tx, "ae_devnet") // signedTx, hash, signature, err
-		if err != nil {
-			log.Printf("[ERROR] SignHashTx! %s\n", err)
-			http.Error(w, http.StatusText(500), 500)
-			return
-		}
-
-		// transform the tx into a tx_base64encodedstring so you can HTTP POST it
-		signedTxStr, err := aeternity.SerializeTx(signedTx)
-		if err != nil {
-			log.Printf("[ERROR] SerializeTx! %s\n", err)
-			http.Error(w, http.StatusText(500), 500)
-			return
-		}
-
-
-		// TODO: del me
-		fmt.Println(signedTxStr)
-
-		
-		// err = aeternity.BroadcastTransaction(node, signedTxStr)
-		// if err != nil {
-		// 	log.Printf("[ERROR] BroadcastTransaction! %s\n", err)
-		// 	http.Error(w, http.StatusText(500), 500)
-		// 	return
-		// }
-		
 		_, txHash, _, err := aeternity.SignBroadcastTransaction(tx, account, n, "ae_devnet") // signedTxStr, hash, signature, err
 		if err != nil {
 			log.Printf("[ERROR] SignBroadcastTransaction! %s\n", err)
@@ -388,8 +313,7 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 			Status string `json:"status"`
 		}
 
-		// go waitForTransaction(tree, node, hash, data.EthPubKey, data.AeAddress, migrationInfo.Balance, compiler, contractSource)
-		status, _ := waitForTransaction(tree, node, hash, data.EthPubKey, data.AeAddress, migrationInfo.Balance, compiler, contractSource)
+		status, _ := waitForTransaction(tree, node, txHash, data.EthPubKey, data.AeAddress, migrationInfo.Balance, compiler, contractSource)
 
 		render.JSON(w, req, response{TxHash: txHash, Status: status})
 	}
@@ -405,10 +329,11 @@ func waitForTransaction(tree *postgre.PostgresMerkleTree, aeNode *aeternity.Node
 
 	txInfo, err := getTxInfo(hash)
 	if err != nil {
+		log.Println("getTxInfo", err)
 		return "Error", errors.New("Error")
 	} else if txInfo.CallInfo.ReturnType == "ok" {
 
-		migrationsCount, err := compiler.DecodeCallResult("ok", txInfo.CallInfo.ReturnValue, "migrate", contractSource, aeternity.Config.Compiler.Backend)
+		migrationsCount, err := compiler.DecodeCallResult("ok", txInfo.CallInfo.ReturnValue, "migrate", contractSource, backend)
 		if err != nil {
 			log.Println("Decode Call Result", err)
 			return "Error", errors.New("Error")
@@ -424,7 +349,7 @@ func waitForTransaction(tree *postgre.PostgresMerkleTree, aeNode *aeternity.Node
 		tree.SetMigratedToSuccess(ethAddress, hash, aeAddress)
 		notifyBackendless(aeAddress, ethAddress, transferredTokens, hash, 5000+migrationsCountAsInt)
 	} else if txInfo.CallInfo.ReturnType == "revert" {
-		response, err := compiler.DecodeCallResult("revert", txInfo.CallInfo.ReturnValue, "migrate", contractSource, aeternity.Config.Compiler.Backend)
+		response, err := compiler.DecodeCallResult("revert", txInfo.CallInfo.ReturnValue, "migrate", contractSource, backend)
 		if err != nil {
 			log.Println("Decode Call Result", err)
 			return "Error", errors.New("Error")
@@ -477,9 +402,7 @@ func notifyBackendless(aeAddress string, ethAddress string, transferedTokens str
 	BL_URL := fmt.Sprintf("https://api.backendless.com/%s/%s", BL_ID, BL_KEY)
 
 	if userToken == "" {
-		fmt.Println("111111111111")
 		userToken = getUserToken(BL_URL)
-		fmt.Println("2222222222222", userToken)
 	}
 
 	pushToBackendless(BL_URL, userToken, aeAddress, ethAddress, transferedTokens, txHash, migrationsCount)
@@ -493,7 +416,6 @@ func getUserToken(url string) string {
 		Password string `json:"password"`
 	}
 
-	// var dbCredentials = dbLoginCredentials{Login: "test@ae.migration.lima", Password: "pas$w0rd!sS3cr3t."}
 	var dbCredentials = dbLoginCredentials{Login: "test@limechain.tech", Password: "ksdlfkaj1salfdj."}
 
 	dataReq := map[string]interface{}{
