@@ -48,7 +48,7 @@ func main() {
 	baseapi.GetInfoByEthAddress(router, tree)
 
 	// migrate gets additional info like hash, index, number of tokens by eth address
-	baseapi.Migrate(router, tree, envConfig.SecretKey, contractSource, envConfig.AEContractAddress, envConfig.AENodeUrl)
+	baseapi.Migrate(router, tree, envConfig.SecretKey, contractSource, envConfig)
 
 	// TODO: delete me !!!!
 	temp.ResetMirgationStatus(router, tree)

@@ -166,17 +166,15 @@ func getInfoByEthAddress(tree *postgre.PostgresMerkleTree) http.HandlerFunc {
 }
 
 // Migrate process request data and passed it to smart contract, after successfull response notified backendless listener
-func Migrate(router chi.Router, tree *postgre.PostgresMerkleTree, secretKey string, contractSource string, aeContractAddress string, aeNodeURL string) chi.Router {
+func Migrate(router chi.Router, tree *postgre.PostgresMerkleTree, secretKey string, contractSource string, envConfig types.EnvConfig) chi.Router {
 
-	router.Post("/migrate", migrate(tree, secretKey, contractSource, aeContractAddress, aeNodeURL))
+	router.Post("/migrate", migrate(tree, secretKey, contractSource, envConfig))
 
 	return router
 }
 
-func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource string, aeContractAddress string, aeNodeURL string) http.HandlerFunc {
+func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource string, envConfig types.EnvConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-
-		envConfig := appUtils.GetEnvConfig()
 
 		appUtils.LogRequest(req, "/migrate")
 		
@@ -257,7 +255,7 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 			return
 		}
 
-		node := aeternity.NewNode(aeNodeURL, false)
+		node := aeternity.NewNode(envConfig.AENodeUrl, false)
 		compiler := aeternity.NewCompiler(aeternity.Config.Client.Contracts.CompilerURL, false)
 
 		signature := data.Signature[2:]
@@ -278,7 +276,7 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 			return
 		}
 
-		context, node := aeternity.NewContextFromURL(aeNodeURL, account.Address, false)
+		context, node := aeternity.NewContextFromURL(envConfig.AENodeUrl, account.Address, false)
 
 		
 		var amount *big.Int = big.NewInt(0)            // aeternity.Config.Client.Contracts.Amount
@@ -287,7 +285,7 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		var gas *big.Int = utils.NewIntFromUint64(1e6) // aeternity.Config.Client.Contracts.Gas // 
 		var fee *big.Int = utils.NewIntFromUint64(665480000000000)
 
-		tx, err := context.ContractCallTx(aeContractAddress, callData, envConfig.AEAbiVersion, *amount, *gas, *gasPrice, *fee)
+		tx, err := context.ContractCallTx(envConfig.AEContractAddress, callData, envConfig.AEAbiVersion, *amount, *gas, *gasPrice, *fee)
 		if err != nil {
 			log.Printf("[ERROR] ContractCallTx! %s\n", err)
 			http.Error(w, http.StatusText(500), 500)
@@ -306,21 +304,19 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 			Status string `json:"status"`
 		}
 
-		status, _ := waitForTransaction(tree, node, txHash, data.EthPubKey, data.AeAddress, migrationInfo.Balance, compiler, contractSource)
+		status, _ := waitForTransaction(tree, node, txHash, data.EthPubKey, data.AeAddress, migrationInfo.Balance, compiler, contractSource, envConfig)
 
 		render.JSON(w, req, response{TxHash: txHash, Status: status})
 	}
 }
 
-func waitForTransaction(tree *postgre.PostgresMerkleTree, aeNode *aeternity.Node, hash string, ethAddress string, aeAddress string, transferredTokens string, compiler *aeternity.Compiler, contractSource string) (result string, e error) {
+func waitForTransaction(tree *postgre.PostgresMerkleTree, aeNode *aeternity.Node, hash string, ethAddress string, aeAddress string, transferredTokens string, compiler *aeternity.Compiler, contractSource string, envConfig types.EnvConfig) (result string, e error) {
 	height := getHeight(aeNode)
 	height, microblockHash, err := aeternity.WaitForTransactionForXBlocks(aeNode, hash, height+100)
 	if err != nil {
 		log.Println("Wait for transaction", err)
 		return "Error", errors.New("Error")
 	}
-
-	envConfig := appUtils.GetEnvConfig()
 
 	txInfo, err := getTxInfo(hash, envConfig.AENodeUrl)
 	if err != nil {
