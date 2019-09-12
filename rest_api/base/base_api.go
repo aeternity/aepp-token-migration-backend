@@ -376,7 +376,7 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		// 	return
 		// }
 		
-		_, txHash, _, err = aeternity.SignBroadcastTransaction(tx, account, n, "ae_devnet") // signedTxStr, hash, signature, err
+		_, txHash, _, err := aeternity.SignBroadcastTransaction(tx, account, n, "ae_devnet") // signedTxStr, hash, signature, err
 		if err != nil {
 			log.Printf("[ERROR] SignBroadcastTransaction! %s\n", err)
 			http.Error(w, http.StatusText(500), 500)
