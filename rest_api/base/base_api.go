@@ -6,8 +6,6 @@ import (
 
 	"github.com/aeternity/aepp-sdk-go/aeternity"
 	"github.com/aeternity/aepp-sdk-go/utils"
-	// "aepp-sdk-go/aeternity"
-	// "aepp-sdk-go/utils"
 
 	"encoding/json"
 	"fmt"
@@ -17,9 +15,7 @@ import (
 	"strconv"
 	"strings"
 
-	// merkletree "aepp-token-migration-backend/memory_merkle_tree"
 	postgre "aepp-token-migration-backend/postgre_sql"
-	merkletree "aepp-token-migration-backend/types"
 	types "aepp-token-migration-backend/types"
 	appUtils "aepp-token-migration-backend/utils"
 
@@ -36,13 +32,13 @@ var userToken string = "89B28858-5FFA-0E4C-FF73-480646005600"
 var migrationsCount int
 
 // MerkleTreeStatus takes pointer to initialized router and the merkle tree and exposes Rest API routes for getting of status
-func MerkleTreeStatus(treeRouter chi.Router, tree merkletree.ExternalMerkleTree) chi.Router {
+func MerkleTreeStatus(treeRouter chi.Router, tree types.ExternalMerkleTree) chi.Router {
 	treeRouter.Get("/", getTreeStatus(tree))
 	return treeRouter
 }
 
 // MerkleTreeHashes takes pointer to initialized router and the merkle tree and exposes Rest API routes for getting of intermediary hashes
-func MerkleTreeHashes(treeRouter chi.Router, tree merkletree.ExternalMerkleTree) chi.Router {
+func MerkleTreeHashes(treeRouter chi.Router, tree types.ExternalMerkleTree) chi.Router {
 	treeRouter.Get("/siblings/{index}", getIntermediaryHashesHandler(tree))
 	return treeRouter
 }
@@ -55,10 +51,10 @@ type MerkleAPIResponse struct {
 
 type treeStatusResponse struct {
 	MerkleAPIResponse
-	Tree merkletree.MerkleTree `json:"tree"`
+	Tree types.MerkleTree `json:"tree"`
 }
 
-func getTreeStatus(tree merkletree.ExternalMerkleTree) http.HandlerFunc {
+func getTreeStatus(tree types.ExternalMerkleTree) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		appUtils.LogRequest(r, "get /")
@@ -77,7 +73,7 @@ type intermediaryHashesResponse struct {
 	Hashes []string `json:"hashes"`
 }
 
-func getIntermediaryHashesHandler(tree merkletree.ExternalMerkleTree) http.HandlerFunc {
+func getIntermediaryHashesHandler(tree types.ExternalMerkleTree) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		appUtils.LogRequest(r, "/siblings/{index}")
 
