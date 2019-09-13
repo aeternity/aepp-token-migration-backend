@@ -1,5 +1,5 @@
-// Package editedtree implements merkle tree stored in the memory of the system
-package editedtree
+// Package merkletree implements merkle tree stored in the memory of the system
+package merkletree
 
 import (
 	"errors"

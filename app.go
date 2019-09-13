@@ -6,12 +6,11 @@ import (
 
 	"github.com/go-chi/chi"
 
-	memory "aepp-token-migration-backend/editedtree"
+	memory "aepp-token-migration-backend/merkletree"
 	"aepp-token-migration-backend/middleware"
 	db "aepp-token-migration-backend/postgre_sql"
 	baseapi "aepp-token-migration-backend/rest_api/base"
 	"aepp-token-migration-backend/rest_api/owner"
-	"aepp-token-migration-backend/rest_api/temp"
 	"aepp-token-migration-backend/rest_api/validator"
 	appUtils "aepp-token-migration-backend/utils"
 )
@@ -51,7 +50,7 @@ func main() {
 	baseapi.Migrate(router, tree, envConfig.SecretKey, contractSource, envConfig)
 
 	// TODO: delete me !!!!
-	temp.ResetMirgationStatus(router, tree)
+	// temp.ResetMirgationStatus(router, tree)
 
 	fmt.Printf("Server start on port: %d\n", envConfig.Port)
 	strPort := fmt.Sprintf(":%d", envConfig.Port)
