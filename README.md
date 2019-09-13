@@ -22,7 +22,28 @@ What you should have installed
 
 clone this repo
 in project root directory `go get`
-set environment variables
+set environment variables in `.env`
+```
+.env_example
+
+CONNECTION_STRING_POSTGRESQL="user=xxxxx password=xxxxxx dbname=xxxxxx port=xxxxxx sslmode=disable"
+GO_API_PORT=3000
+SECRET_KEY="xxxxxxxxxxxxx" 
+CONTRACT_SOURCE_URL_GIT_RAW="https://raw.githubusercontent.com/LimeChain/aepp-token-migration-smart-contract/master/contracts/TokenMigration.aes" 
+AE_NODE_URL="http://localhost:3001"
+AE_CONTRACT_TOKEN_MIGRATION_ADDRESS="ct_nvYGScRcwHWurpUWg9qPyWNQKxnSxG55zXoWSQigMSYSa8g51"
+AE_NETWORK_ID="ae_devnet"
+AE_BACKEND="fate"
+AE_ABI_VERSION=3
+BACKENDLESS_LOGIN="xxxx@xxxx.xxx"
+BACKENDLESS_PASSWORD="xxxxxxxx"
+BACKENDLESS_ID="xxxx-4114-xxxxx-FF41-xxxxxxx"
+BACKENDLESS_KEY="xxxxx-xxxxx"
+BACKENDLESS_URL="https://xxxx.xxxxx.com"
+BACKENDLESS_USERTOKEN="xxxxxxx"
+BACKENDLESS_TABLE="xxxxxxx"
+```
+
 and start it `go run app.go`
 
 #### There are several `routes` that can be access
