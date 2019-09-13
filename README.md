@@ -22,7 +22,7 @@ What you should have installed
 
 clone this repo
 in project root directory `go get`
-set environment variables in `.env`
+set the environment variables in an .env file. You can see example in the .env_example file
 ```
 .env_example
 
