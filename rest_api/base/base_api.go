@@ -35,12 +35,6 @@ var abiVersion uint16 = 3 // aeternity.Config.Client.Contracts.ABIVersion // aev
 var userToken string = "89B28858-5FFA-0E4C-FF73-480646005600"
 var migrationsCount int
 
-// MerkleTreeStatus takes pointer to initialized router and the merkle tree and exposes Rest API routes for getting of status
-func MerkleTreeStatus(treeRouter chi.Router, tree merkletree.ExternalMerkleTree) chi.Router {
-	treeRouter.Get("/", getTreeStatus(tree))
-	return treeRouter
-}
-
 // MerkleTreeHashes takes pointer to initialized router and the merkle tree and exposes Rest API routes for getting of intermediary hashes
 func MerkleTreeHashes(treeRouter chi.Router, tree merkletree.ExternalMerkleTree) chi.Router {
 	treeRouter.Get("/siblings/{index}", getIntermediaryHashesHandler(tree))
@@ -56,6 +50,12 @@ type MerkleAPIResponse struct {
 type treeStatusResponse struct {
 	MerkleAPIResponse
 	Tree merkletree.MerkleTree `json:"tree"`
+}
+
+// MerkleTreeStatus takes pointer to initialized router and the merkle tree and exposes Rest API routes for getting of status
+func MerkleTreeStatus(treeRouter chi.Router, tree merkletree.ExternalMerkleTree) chi.Router {
+	treeRouter.Get("/", getTreeStatus(tree))
+	return treeRouter
 }
 
 func getTreeStatus(tree merkletree.ExternalMerkleTree) http.HandlerFunc {
