@@ -7,6 +7,9 @@ import (
 	"github.com/aeternity/aepp-sdk-go/aeternity"
 	"github.com/aeternity/aepp-sdk-go/utils"
 
+	// "aepp-sdk-go/aeternity"
+	// "aepp-sdk-go/utils"
+
 	"encoding/json"
 	"fmt"
 	"log"
@@ -200,11 +203,11 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 			return
 		}
 
-		if data.MessageDigest == "" {
-			log.Printf("[ERROR] Missing MessageDigest! Migrate procedure should NOT start!\n")
-			http.Error(w, "Missing MessageDigest! Migrate procedure should NOT start!", 400)
-			return
-		}
+		// if data.MessageDigest == "" {
+		// 	log.Printf("[ERROR] Missing MessageDigest! Migrate procedure should NOT start!\n")
+		// 	http.Error(w, "Missing MessageDigest! Migrate procedure should NOT start!", 400)
+		// 	return
+		// }
 
 		if data.Signature == "" {
 			log.Printf("[ERROR] Missing Signature! Migrate procedure should NOT start!\n")
@@ -278,7 +281,6 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 
 		context, node := aeternity.NewContextFromURL(envConfig.AENodeUrl, account.Address, false)
 
-		
 		var amount *big.Int = big.NewInt(0)            // aeternity.Config.Client.Contracts.Amount
 		var gasPrice *big.Int = big.NewInt(1000000000) // aeternity.Config.Client.Contracts.GasPrice
 		// var gas big.Int = aeternity.Config.Client.Contracts.Gas // utils.NewIntFromUint64(1e6) // 
@@ -312,7 +314,7 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 
 func waitForTransaction(tree *postgre.PostgresMerkleTree, aeNode *aeternity.Node, hash string, ethAddress string, aeAddress string, transferredTokens string, compiler *aeternity.Compiler, contractSource string, envConfig types.EnvConfig) (result string, e error) {
 	height := getHeight(aeNode)
-	height, microblockHash, err := aeternity.WaitForTransactionForXBlocks(aeNode, hash, height+100)
+	height, microblockHash, err := aeternity.WaitForTransactionForXBlocks(aeNode, hash, height+10)
 	if err != nil {
 		log.Println("Wait for transaction", err)
 		return "Error", errors.New("Error")
