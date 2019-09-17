@@ -125,7 +125,16 @@ func LoadMerkleTree(tree types.FullMerkleTree, connStr string) *PostgresMerkleTr
 }
 
 func connectToDb(connStr string) *sql.DB {
-	db, err := sql.Open("postgres", connStr)
+
+	fmt.Println(connStr)
+
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable",
+		"token-migration:europe-west1:test-token-db-p",
+		"token-migration",
+		"A2DMFlwEDj85ep6JJJJ",
+		"test")
+
+	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		panic("Could not connect to the database.\n Original error: " + err.Error())
 	}
