@@ -25,6 +25,11 @@ func GetEnvConfig() (types.EnvConfig) {
 	}
 
 	connectionString := os.Getenv("CONNECTION_STRING_POSTGRESQL")
+	isProdEnv := os.Getenv("IS_PROD") == "true"
+	if isProdEnv {
+		connectionString = os.Getenv("CONNECTION_STRING_POSTGRESQL_PROD")
+	}
+
 	port, err := strconv.Atoi(os.Getenv("GO_API_PORT"))
 	if err != nil {
 		log.Fatal("Error parsing port!")
