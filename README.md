@@ -20,13 +20,15 @@ What you should have installed
  - Go: https://golang.org/dl/
  - local postgresql(https://www.postgresql.org/download/) or connect to remote one
 
-clone this repo
-in project root directory `go get`
+clone this repo into `$GOPATH/go/src`
+in project root directory `go get -u`
 set the environment variables in an .env file. You can see example in the .env_example file
 ```
 .env_example
 
+IS_PROD="true"
 CONNECTION_STRING_POSTGRESQL="user=xxxxx password=xxxxxx dbname=xxxxxx port=xxxxxx sslmode=disable"
+CONNECTION_STRING_POSTGRESQL_PROD="host=/cloudsql/project:region:dbinstance user=xxxxx password=xxxxxx dbname=xxxxx sslmode=disable"
 GO_API_PORT=3000
 SECRET_KEY="xxxxxxxxxxxxx" 
 CONTRACT_SOURCE_URL_GIT_RAW="https://raw.githubusercontent.com/LimeChain/aepp-token-migration-smart-contract/master/contracts/TokenMigration.aes" 
