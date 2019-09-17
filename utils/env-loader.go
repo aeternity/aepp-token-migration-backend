@@ -49,6 +49,7 @@ func GetEnvConfig() (types.EnvConfig) {
 	blUserToken := os.Getenv("BACKENDLESS_USERTOKEN")
 	blTable := os.Getenv("BACKENDLESS_TABLE")
 
+	aeCompilerURL := os.Getenv("AE_COMPILER_URL")
 	aeNetworkID := os.Getenv("AE_NETWORK_ID")
 	aeBackend := os.Getenv("AE_BACKEND")
 	aeAbiVersionInt, err := strconv.Atoi(os.Getenv("AE_ABI_VERSION"))
@@ -68,6 +69,7 @@ func GetEnvConfig() (types.EnvConfig) {
 		AENetworkID: aeNetworkID,
 		AEBackend: aeBackend,
 		AEAbiVersion: aeAbiVersion,
+		AECompilerURL: aeCompilerURL,
 		BackendlessConfig: backendlessConfig}
 
 	isLoaded = true

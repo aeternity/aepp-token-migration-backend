@@ -259,7 +259,7 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		}
 
 		node := aeternity.NewNode(envConfig.AENodeUrl, false)
-		compiler := aeternity.NewCompiler(aeternity.Config.Client.Contracts.CompilerURL, false)
+		compiler := aeternity.NewCompiler(envConfig.AECompilerURL , false)
 
 		signature := data.Signature[2:]
 		signature = signature[len(signature)-2:] + signature[:len(signature)-2]
