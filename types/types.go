@@ -1,4 +1,4 @@
-package merkletree
+package types
 
 import (
 	"encoding/json"
