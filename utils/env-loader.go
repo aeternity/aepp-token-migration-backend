@@ -57,6 +57,8 @@ func GetEnvConfig() (types.EnvConfig) {
 		log.Fatal("Error parsing abi version!")
 	}
 
+	bearerAuthToken := os.Getenv("BEARER_AUTH_TOKEN")
+
 	var aeAbiVersion = uint16(aeAbiVersionInt)
 
 	var backendlessConfig = types.BackendlessConfig{ID: blId, Key: blKey, Login: blLogin, Password: blPassword, Url: blUrl, UserToken: blUserToken, Table: blTable}
@@ -70,6 +72,7 @@ func GetEnvConfig() (types.EnvConfig) {
 		AEBackend: aeBackend,
 		AEAbiVersion: aeAbiVersion,
 		AECompilerURL: aeCompilerURL,
+		BearerAuthToken: bearerAuthToken,
 		BackendlessConfig: backendlessConfig}
 
 	isLoaded = true

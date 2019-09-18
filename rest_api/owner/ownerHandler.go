@@ -14,15 +14,22 @@ import (
 )
 
 // AddTokenOwner add token owner to DB with given params: eht address, token amount
-func AddTokenOwner(router chi.Router, tree *postgre.PostgresMerkleTree) chi.Router {
+func AddTokenOwner(router chi.Router, tree *postgre.PostgresMerkleTree, bearerAuthToken string) chi.Router {
 
-	router.Post("/owner", addTokenOwner(tree))
+	router.Post("/owner", addTokenOwner(tree, bearerAuthToken))
 
 	return router
 }
 
-func addTokenOwner(tree *postgre.PostgresMerkleTree) http.HandlerFunc {
+func addTokenOwner(tree *postgre.PostgresMerkleTree, bearerAuthToken string) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
+
+		auth := req.Header.Get("Authorization")
+		if auth == "" || auth != bearerAuthToken {
+			http.Error(res, "Unauthorized", 401)
+			return
+		}
+
 		utils.LogRequest(req, "/owner")
 
 		type requestData struct {

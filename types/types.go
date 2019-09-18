@@ -114,4 +114,5 @@ type EnvConfig struct {
 	AEBackend string
 	AEAbiVersion uint16
 	AECompilerURL string
+	BearerAuthToken string
 }

@@ -203,12 +203,6 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 			return
 		}
 
-		// if data.MessageDigest == "" {
-		// 	log.Printf("[ERROR] Missing MessageDigest! Migrate procedure should NOT start!\n")
-		// 	http.Error(w, "Missing MessageDigest! Migrate procedure should NOT start!", 400)
-		// 	return
-		// }
-
 		if data.Signature == "" {
 			log.Printf("[ERROR] Missing Signature! Migrate procedure should NOT start!\n")
 			http.Error(w, "Missing Signature! Migrate procedure should NOT start!", 400)

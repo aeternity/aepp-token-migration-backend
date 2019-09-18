@@ -38,7 +38,7 @@ func main() {
 	validator.MerkleTreeValidate(router, tree.FullMerkleTree)
 
 	// add token owner to DB with given params: eht address, token amount
-	owner.AddTokenOwner(router, tree)
+	owner.AddTokenOwner(router, tree, envConfig.BearerAuthToken)
 
 	// gets hash at index 'X'
 	baseapi.GetHashByLeafIndex(router, tree)
