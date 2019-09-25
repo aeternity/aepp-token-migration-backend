@@ -3,6 +3,7 @@ package baseapi
 import (
 	"bytes"
 	"errors"
+	"sync"
 
 	"github.com/aeternity/aepp-sdk-go/v5/aeternity"
 	"github.com/aeternity/aepp-sdk-go/v5/utils"
@@ -29,6 +30,8 @@ import (
 var migrationsCount int
 var customNonce uint64
 var cTTL uint64
+
+var mu sync.Mutex
 
 // MerkleTreeStatus takes pointer to initialized router and the merkle tree and exposes Rest API routes for getting of status
 func MerkleTreeStatus(treeRouter chi.Router, tree types.ExternalMerkleTree) chi.Router {
@@ -182,7 +185,7 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 	return func(w http.ResponseWriter, req *http.Request) {
 
 		appUtils.LogRequest(req, "/migrate")
-		
+
 		type reqData struct {
 			EthPubKey     string `json:"ethPubKey"`
 			MessageDigest string `json:"messageDigest"`
@@ -255,20 +258,30 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		}
 
 		node := aeternity.NewNode(envConfig.AENodeUrl, false)
-		compiler := aeternity.NewCompiler(envConfig.AECompilerURL , false)
+		compiler := aeternity.NewCompiler(envConfig.AECompilerURL, false)
 
 		signature := data.Signature[2:]
 		signature = signature[len(signature)-2:] + signature[:len(signature)-2]
 
+		// log.Println()
+		// log.Println("---start--")
+		// log.Println(migrationInfo.Balance)
+		// log.Println(data.AeAddress)
+		// log.Println(migrationInfo.Leaf_index)
+		// log.Println(siblingsAsStr)
+		// log.Println(signature)
+		// log.Println("---end--")
+		// log.Println()
+
 		callData, err := compiler.EncodeCalldata(
 			contractSource,
 			"migrate",
-			[]string{ fmt.Sprintf(`%s`, migrationInfo.Balance),
+			[]string{fmt.Sprintf(`%s`, migrationInfo.Balance),
 				fmt.Sprintf(`%s`, data.AeAddress),
-				fmt.Sprintf(`%d`, migrationInfo.Leaf_index), 
+				fmt.Sprintf(`%d`, migrationInfo.Leaf_index),
 				fmt.Sprintf(`%s`, siblingsAsStr),
 				fmt.Sprintf(`#%s`, signature)},
-				envConfig.AEBackend)
+			envConfig.AEBackend)
 		if err != nil {
 			log.Printf("[ERROR] EncodeCalldata! %s\n", err)
 			http.Error(w, fmt.Sprintf("Cannot encode call data. %s.", http.StatusText(500)), 500)
@@ -279,11 +292,9 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 
 		var amount *big.Int = big.NewInt(0)            // aeternity.Config.Client.Contracts.Amount
 		var gasPrice *big.Int = big.NewInt(1000000000) // aeternity.Config.Client.Contracts.GasPrice
-		// var gas big.Int = aeternity.Config.Client.Contracts.Gas // utils.NewIntFromUint64(1e6) // 
-		var gasLimit *big.Int = utils.NewIntFromUint64(1e6) // aeternity.Config.Client.Contracts.Gas // 
+		// var gas big.Int = aeternity.Config.Client.Contracts.Gas // utils.NewIntFromUint64(1e6) //
+		var gasLimit *big.Int = utils.NewIntFromUint64(1e6) // aeternity.Config.Client.Contracts.Gas //
 		var fee *big.Int = utils.NewIntFromUint64(665480000000000)
-
-
 
 		if customNonce == 0 {
 			ttl, nonce, err := context.GetTTLNonce(context.Address, aeternity.Config.Client.TTL) // ttl, nonce, err :=
@@ -292,17 +303,21 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 				http.Error(w, fmt.Sprintf("GetTTLNonce. %s.", http.StatusText(500)), 500)
 				return
 			}
+
+			mu.Lock()
 			customNonce = nonce
 			cTTL = ttl
-		} 
+			mu.Unlock()
+		}
 
 		log.Println("[ NONCE] customNonce", customNonce)
-	
+
+		mu.Lock()
 		tx := aeternity.NewContractCallTx(context.Address, customNonce, envConfig.AEContractAddress, *amount, *gasLimit, *gasPrice, envConfig.AEAbiVersion, callData, *fee, cTTL)
 
 		customNonce++
+		mu.Unlock()
 
-		
 		// working one
 		// tx, err := context.ContractCallTx(envConfig.AEContractAddress, callData, envConfig.AEAbiVersion, *amount, *gasLimit, *gasPrice, *fee)
 		// if err != nil {
@@ -411,7 +426,7 @@ func notifyBackendless(envConfig types.EnvConfig, aeAddress string, ethAddress s
 
 	if envConfig.BackendlessConfig.Url == "" || envConfig.BackendlessConfig.ID == "" || envConfig.BackendlessConfig.Key == "" || envConfig.BackendlessConfig.Login == "" || envConfig.BackendlessConfig.Password == "" {
 		log.Println("[WARN] Missing backendless credentials")
-		return;
+		return
 	}
 
 	backendlessPushURL := fmt.Sprintf("%s/%s/%s", envConfig.BackendlessConfig.Url, envConfig.BackendlessConfig.ID, envConfig.BackendlessConfig.Key)
