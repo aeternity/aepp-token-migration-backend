@@ -27,6 +27,8 @@ import (
 )
 
 var migrationsCount int
+var customNonce uint64
+var cTTL uint64
 
 // MerkleTreeStatus takes pointer to initialized router and the merkle tree and exposes Rest API routes for getting of status
 func MerkleTreeStatus(treeRouter chi.Router, tree types.ExternalMerkleTree) chi.Router {
@@ -278,15 +280,36 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		var amount *big.Int = big.NewInt(0)            // aeternity.Config.Client.Contracts.Amount
 		var gasPrice *big.Int = big.NewInt(1000000000) // aeternity.Config.Client.Contracts.GasPrice
 		// var gas big.Int = aeternity.Config.Client.Contracts.Gas // utils.NewIntFromUint64(1e6) // 
-		var gas *big.Int = utils.NewIntFromUint64(1e6) // aeternity.Config.Client.Contracts.Gas // 
+		var gasLimit *big.Int = utils.NewIntFromUint64(1e6) // aeternity.Config.Client.Contracts.Gas // 
 		var fee *big.Int = utils.NewIntFromUint64(665480000000000)
 
-		tx, err := context.ContractCallTx(envConfig.AEContractAddress, callData, envConfig.AEAbiVersion, *amount, *gas, *gasPrice, *fee)
-		if err != nil {
-			log.Printf("[ERROR] ContractCallTx! %s\n", err)
-			http.Error(w, http.StatusText(500), 500)
-			return
-		}
+
+
+		if customNonce == 0 {
+			ttl, nonce, err := context.GetTTLNonce(context.Address, aeternity.Config.Client.TTL) // ttl, nonce, err :=
+			if err != nil {
+				log.Printf("[ERROR] GetTTLNonce! %s\n", err)
+				http.Error(w, fmt.Sprintf("GetTTLNonce. %s.", http.StatusText(500)), 500)
+				return
+			}
+			customNonce = nonce
+			cTTL = ttl
+		} 
+
+		log.Println("[ NONCE] customNonce", customNonce)
+	
+		tx := aeternity.NewContractCallTx(context.Address, customNonce, envConfig.AEContractAddress, *amount, *gasLimit, *gasPrice, envConfig.AEAbiVersion, callData, *fee, cTTL)
+
+		customNonce++
+
+		
+		// working one
+		// tx, err := context.ContractCallTx(envConfig.AEContractAddress, callData, envConfig.AEAbiVersion, *amount, *gasLimit, *gasPrice, *fee)
+		// if err != nil {
+		// 	log.Printf("[ERROR] ContractCallTx! %s\n", err)
+		// 	http.Error(w, http.StatusText(500), 500)
+		// 	return
+		// }
 
 		_, txHash, _, err := aeternity.SignBroadcastTransaction(tx, account, node, envConfig.AENetworkID) // signedTxStr, hash, signature, err
 		if err != nil {
@@ -294,6 +317,8 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
+
+		log.Println("[INFO] tx hash:", txHash)
 
 		type response struct {
 			TxHash string `json:"txHash"`
@@ -383,6 +408,11 @@ func getHeight(aeNode *aeternity.Node) (h uint64) {
 }
 
 func notifyBackendless(envConfig types.EnvConfig, aeAddress string, ethAddress string, transferredTokens string, txHash string, migrationsCount int) {
+
+	if envConfig.BackendlessConfig.Url == "" || envConfig.BackendlessConfig.ID == "" || envConfig.BackendlessConfig.Key == "" || envConfig.BackendlessConfig.Login == "" || envConfig.BackendlessConfig.Password == "" {
+		log.Println("[WARN] Missing backendless credentials")
+		return;
+	}
 
 	backendlessPushURL := fmt.Sprintf("%s/%s/%s", envConfig.BackendlessConfig.Url, envConfig.BackendlessConfig.ID, envConfig.BackendlessConfig.Key)
 
