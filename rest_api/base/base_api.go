@@ -8,8 +8,6 @@ import (
 	"github.com/aeternity/aepp-sdk-go/v5/aeternity"
 	"github.com/aeternity/aepp-sdk-go/v5/utils"
 
-	// "aepp-sdk-go/aeternity"
-	// "aepp-sdk-go/utils"
 
 	"encoding/json"
 	"fmt"
@@ -257,31 +255,23 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 			return
 		}
 
-		node := aeternity.NewNode(envConfig.AENodeUrl, false)
+		// node := aeternity.NewNode(envConfig.AENodeUrl, false)
 		compiler := aeternity.NewCompiler(envConfig.AECompilerURL, false)
 
 		signature := data.Signature[2:]
 		signature = signature[len(signature)-2:] + signature[:len(signature)-2]
 
-		// log.Println()
-		// log.Println("---start--")
-		// log.Println(migrationInfo.Balance)
-		// log.Println(data.AeAddress)
-		// log.Println(migrationInfo.Leaf_index)
-		// log.Println(siblingsAsStr)
-		// log.Println(signature)
-		// log.Println("---end--")
-		// log.Println()
 
 		callData, err := compiler.EncodeCalldata(
 			contractSource,
 			"migrate",
-			[]string{fmt.Sprintf(`%s`, migrationInfo.Balance),
-				fmt.Sprintf(`%s`, data.AeAddress),
-				fmt.Sprintf(`%d`, migrationInfo.Leaf_index),
-				fmt.Sprintf(`%s`, siblingsAsStr),
-				fmt.Sprintf(`#%s`, signature)},
-			envConfig.AEBackend)
+			[]string{ fmt.Sprintf(`%v`, migrationInfo.Balance),
+				fmt.Sprintf(`%v`, data.AeAddress),
+				fmt.Sprintf(`%v`, migrationInfo.Leaf_index), 
+				fmt.Sprintf(`%v`, siblingsAsStr),
+				fmt.Sprintf("#%s", signature)},
+				envConfig.AEBackend)
+
 		if err != nil {
 			log.Printf("[ERROR] EncodeCalldata! %s\n", err)
 			http.Error(w, fmt.Sprintf("Cannot encode call data. %s.", http.StatusText(500)), 500)

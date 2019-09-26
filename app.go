@@ -18,10 +18,10 @@ import (
 func main() {
 	envConfig := appUtils.GetEnvConfig()
 
-	contractSource := appUtils.GetContractSource(envConfig.ContractRawUrl)
+	// contractSource := appUtils.GetContractSource(envConfig.ContractRawUrl)
 
 	// TODO: deleted me after development
-	// contractSource := appUtils.GetContractSource("")
+	contractSource := appUtils.GetContractSource("")
 
 	tree := db.LoadMerkleTree(memory.NewMerkleTree(), envConfig.DbConnectionStr)
 
