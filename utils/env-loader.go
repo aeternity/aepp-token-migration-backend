@@ -30,6 +30,7 @@ func GetEnvConfig() (types.EnvConfig) {
 	aeNodeUrl := os.Getenv("AE_NODE_URL")
 	aeCompilerURL := os.Getenv("AE_COMPILER_URL")
 	aeNetworkID := os.Getenv("AE_NETWORK_ID")
+	bearerAuthToken := os.Getenv("BEARER_AUTH_TOKEN")
 
 	if isProdEnv {
 		connectionString = os.Getenv("CONNECTION_STRING_POSTGRESQL_PROD")
@@ -37,6 +38,7 @@ func GetEnvConfig() (types.EnvConfig) {
 		aeNodeUrl = os.Getenv("AE_NODE_URL_PROD")
 		aeCompilerURL = os.Getenv("AE_COMPILER_URL_PROD")
 		aeNetworkID = os.Getenv("AE_NETWORK_ID_PROD")
+		bearerAuthToken = os.Getenv("BEARER_AUTH_TOKEN_PROD")
 	}
 
 	port, err := strconv.Atoi(portAsStr)
@@ -63,7 +65,7 @@ func GetEnvConfig() (types.EnvConfig) {
 		log.Fatal("Error parsing abi version!")
 	}
 
-	bearerAuthToken := os.Getenv("BEARER_AUTH_TOKEN")
+	
 
 	var aeAbiVersion = uint16(aeAbiVersionInt)
 

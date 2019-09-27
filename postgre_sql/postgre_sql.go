@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	InsertQuery = `INSERT INTO token_migration21 (hash, eth_address, ae_address, balance, leaf_index, migrated) 
+	InsertQuery = `INSERT INTO token_migration_infura (hash, eth_address, ae_address, balance, leaf_index, migrated) 
 						 VALUES ($1, $2, $3, $4, $5, $6)`
-	SelectQuery = "SELECT hash FROM token_migration21 ORDER BY leaf_index"
-	CreateQuery = `CREATE TABLE token_migration21 (
+	SelectQuery = "SELECT hash FROM token_migration_infura ORDER BY leaf_index"
+	CreateQuery = `CREATE TABLE token_migration_infura (
 		hash varchar(66) NOT NULL,
 		eth_address varchar(42) NOT NULL,
 		ae_address varchar(53) DEFAULT '',
@@ -25,7 +25,7 @@ const (
 		migrate_tx_hash varchar(100) DEFAULT '',
 		PRIMARY KEY (hash)
 	  )`  
-	CreateIfNotExists = `CREATE TABLE IF NOT EXISTS token_migration21 (
+	CreateIfNotExists = `CREATE TABLE IF NOT EXISTS token_migration_infura (
 		hash varchar(66) NOT NULL,
 		eth_address varchar(42) NOT NULL,
 		ae_address varchar(53) DEFAULT '',
@@ -35,12 +35,12 @@ const (
 		migrate_tx_hash varchar(100) DEFAULT '',
 		PRIMARY KEY (hash)
 	  )`  
-	QueryGetByEthAddress = `SELECT * FROM token_migration21
+	QueryGetByEthAddress = `SELECT * FROM token_migration_infura
 	where lower(eth_address) = lower($1)`
-	QuerySetMigratedToSuccess = `UPDATE public.token_migration21
+	QuerySetMigratedToSuccess = `UPDATE public.token_migration_infura
 	SET migrated = '1', migrate_tx_hash = $2, ae_address = $3
 	WHERE lower(eth_address) = lower($1);`
-	QueryResetMigrationStatus = `UPDATE public.token_migration21
+	QueryResetMigrationStatus = `UPDATE public.token_migration_infura
 	SET migrated = '0', migrate_tx_hash = '', ae_address = ''
 	WHERE lower(eth_address) = lower($1);`
 )
