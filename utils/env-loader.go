@@ -24,13 +24,22 @@ func GetEnvConfig() (types.EnvConfig) {
 		log.Fatal("Error loading .env file")
 	}
 
-	connectionString := os.Getenv("CONNECTION_STRING_POSTGRESQL")
 	isProdEnv := os.Getenv("IS_PROD") == "true"
+	connectionString := os.Getenv("CONNECTION_STRING_POSTGRESQL")
+	portAsStr :=os.Getenv("GO_API_PORT")
+	aeNodeUrl := os.Getenv("AE_NODE_URL")
+	aeCompilerURL := os.Getenv("AE_COMPILER_URL")
+	aeNetworkID := os.Getenv("AE_NETWORK_ID")
+
 	if isProdEnv {
 		connectionString = os.Getenv("CONNECTION_STRING_POSTGRESQL_PROD")
+		portAsStr = os.Getenv("GO_API_PORT_PROD")
+		aeNodeUrl = os.Getenv("AE_NODE_URL_PROD")
+		aeCompilerURL = os.Getenv("AE_COMPILER_URL_PROD")
+		aeNetworkID = os.Getenv("AE_NETWORK_ID_PROD")
 	}
 
-	port, err := strconv.Atoi(os.Getenv("GO_API_PORT"))
+	port, err := strconv.Atoi(portAsStr)
 	if err != nil {
 		log.Fatal("Error parsing port!")
 	}
@@ -38,8 +47,7 @@ func GetEnvConfig() (types.EnvConfig) {
 	secretKey := os.Getenv("SECRET_KEY")
 	contractRawUrl := os.Getenv("CONTRACT_SOURCE_URL_GIT_RAW")
 	aeContractAddress := os.Getenv("AE_CONTRACT_TOKEN_MIGRATION_ADDRESS")
-	aeNodeUrl := os.Getenv("AE_NODE_URL")
-
+	
 	// new config
 	blLogin := os.Getenv("BACKENDLESS_LOGIN")
 	blPassword := os.Getenv("BACKENDLESS_PASSWORD")
@@ -49,8 +57,6 @@ func GetEnvConfig() (types.EnvConfig) {
 	blUserToken := os.Getenv("BACKENDLESS_USERTOKEN")
 	blTable := os.Getenv("BACKENDLESS_TABLE")
 
-	aeCompilerURL := os.Getenv("AE_COMPILER_URL")
-	aeNetworkID := os.Getenv("AE_NETWORK_ID")
 	aeBackend := os.Getenv("AE_BACKEND")
 	aeAbiVersionInt, err := strconv.Atoi(os.Getenv("AE_ABI_VERSION"))
 	if err != nil {
