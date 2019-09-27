@@ -335,12 +335,12 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 
 		type response struct {
 			TxHash string `json:"txHash"`
-			Status string `json:"status"`
+			// Status string `json:"status"`
 		}
 
-		status, _ := waitForTransaction(tree, node, txHash, data.EthPubKey, data.AeAddress, migrationInfo.Balance, compiler, contractSource, envConfig)
+		go waitForTransaction(tree, node, txHash, data.EthPubKey, data.AeAddress, migrationInfo.Balance, compiler, contractSource, envConfig)
 
-		render.JSON(w, req, response{TxHash: txHash, Status: status})
+		render.JSON(w, req, response{TxHash: txHash})
 	}
 }
 
