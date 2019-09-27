@@ -302,14 +302,6 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		customNonce++
 		mu.Unlock()
 
-		// working one
-		// tx, err := context.ContractCallTx(envConfig.AEContractAddress, callData, envConfig.AEAbiVersion, *amount, *gasLimit, *gasPrice, *fee)
-		// if err != nil {
-		// 	log.Printf("[ERROR] ContractCallTx! %s\n", err)
-		// 	http.Error(w, http.StatusText(500), 500)
-		// 	return
-		// }
-
 		txHash := ""
 		maxTries := 1000
 
@@ -317,8 +309,6 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		for tries < maxTries {
 			_, txHash, _, err = aeternity.SignBroadcastTransaction(tx, account, node, envConfig.AENetworkID) // signedTxStr, hash, signature, err
 			if err != nil {
-
-				fmt.Println(">>> try", tries)
 				tries++
 			} else {
 				break;

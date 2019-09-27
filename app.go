@@ -18,10 +18,10 @@ import (
 func main() {
 	envConfig := appUtils.GetEnvConfig()
 
-	// contractSource := appUtils.GetContractSource(envConfig.ContractRawUrl)
+	contractSource := appUtils.GetContractSource(envConfig.ContractRawUrl)
 
 	// TODO: deleted me after development
-	contractSource := appUtils.GetContractSource("")
+	// contractSource := appUtils.GetContractSource("")
 
 	tree := db.LoadMerkleTree(memory.NewMerkleTree(), envConfig.DbConnectionStr)
 
@@ -48,9 +48,6 @@ func main() {
 
 	// migrate gets additional info like hash, index, number of tokens by eth address
 	baseapi.Migrate(router, tree, envConfig.SecretKey, contractSource, envConfig)
-
-	// TODO: delete me !!!!
-	// temp.ResetMirgationStatus(router, tree)
 
 	fmt.Printf("Server start on port: %d\n", envConfig.Port)
 	strPort := fmt.Sprintf(":%d", envConfig.Port)
