@@ -8,7 +8,6 @@ import (
 	"github.com/aeternity/aepp-sdk-go/v5/aeternity"
 	"github.com/aeternity/aepp-sdk-go/v5/utils"
 
-
 	"encoding/json"
 	"fmt"
 	"log"
@@ -255,22 +254,20 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 			return
 		}
 
-		// node := aeternity.NewNode(envConfig.AENodeUrl, false)
 		compiler := aeternity.NewCompiler(envConfig.AECompilerURL, false)
 
 		signature := data.Signature[2:]
 		signature = signature[len(signature)-2:] + signature[:len(signature)-2]
 
-
 		callData, err := compiler.EncodeCalldata(
 			contractSource,
 			"migrate",
-			[]string{ fmt.Sprintf(`%v`, migrationInfo.Balance),
+			[]string{fmt.Sprintf(`%v`, migrationInfo.Balance),
 				fmt.Sprintf(`%v`, data.AeAddress),
-				fmt.Sprintf(`%v`, migrationInfo.Leaf_index), 
+				fmt.Sprintf(`%v`, migrationInfo.Leaf_index),
 				fmt.Sprintf(`%v`, siblingsAsStr),
 				fmt.Sprintf("#%s", signature)},
-				envConfig.AEBackend)
+			envConfig.AEBackend)
 
 		if err != nil {
 			log.Printf("[ERROR] EncodeCalldata! %s\n", err)
@@ -300,11 +297,8 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 			mu.Unlock()
 		}
 
-		log.Println("[ NONCE] customNonce", customNonce)
-
 		mu.Lock()
 		tx := aeternity.NewContractCallTx(context.Address, customNonce, envConfig.AEContractAddress, *amount, *gasLimit, *gasPrice, envConfig.AEAbiVersion, callData, *fee, cTTL)
-
 		customNonce++
 		mu.Unlock()
 
@@ -316,9 +310,23 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		// 	return
 		// }
 
-		_, txHash, _, err := aeternity.SignBroadcastTransaction(tx, account, node, envConfig.AENetworkID) // signedTxStr, hash, signature, err
-		if err != nil {
-			log.Printf("[ERROR] SignBroadcastTransaction! %s\n", err)
+		txHash := ""
+		maxTries := 1000
+
+		tries := 0
+		for tries < maxTries {
+			_, txHash, _, err = aeternity.SignBroadcastTransaction(tx, account, node, envConfig.AENetworkID) // signedTxStr, hash, signature, err
+			if err != nil {
+
+				fmt.Println(">>> try", tries)
+				tries++
+			} else {
+				break;
+			}
+		}
+
+		if tries >= maxTries - 1 {
+			log.Printf("[ERROR] SignBroadcastTransaction! %s\n==>> TX: %v\n", err, tx)
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
@@ -350,6 +358,7 @@ func waitForTransaction(tree *postgre.PostgresMerkleTree, aeNode *aeternity.Node
 		return "Error", errors.New("Error")
 	} else if txInfo.CallInfo.ReturnType == "ok" {
 
+		log.Println("[INFO] [SUCCESS] Nonce", txInfo.CallInfo.CallerNonce, "TX Hash", hash)
 		migrationsCount, err := compiler.DecodeCallResult("ok", txInfo.CallInfo.ReturnValue, "migrate", contractSource, envConfig.AEBackend)
 		if err != nil {
 			log.Println("Decode Call Result", err)
