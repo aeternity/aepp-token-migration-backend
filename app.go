@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-chi/chi"
 
-	memory "aepp-token-migration-backend/merkletree"
+	memory "aepp-token-migration-backend/merkle_tree"
 	"aepp-token-migration-backend/middleware"
 	db "aepp-token-migration-backend/postgre_sql"
 	baseapi "aepp-token-migration-backend/rest_api/base"
