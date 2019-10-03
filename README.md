@@ -13,7 +13,7 @@ A backend app is going to create and maintain a Merkle tree of all ethereum AE h
 To begin the migration the users must provide their aeternity accounts. If they lack one, ability to create will be present. After that, the users must authenticate with their Etherum address. There are two ways of achieving that - with Metamask or MyEtherWallet. The first phase will support only Metamask. After the authentication, the balance that will be migrated will be shown and they will be prompt to sign a message with their ethereum private key. The message must be their aeternity account! Once the message is signed, the client-side will build a transaction for the token migration. The raw transaction will be sent to the backend. On the other hand, the backend will have the ability to sign and send the transaction. The backend will have several functions, create and store the merkle tree information, send the necessary information to the client-side and send the transactions. The merkle tree approach was chosen because it is far more cheap to use than storing all ethereum addresses and balances into a smart contract. From all addresses and balance, the backend will create the merkle tree and store the hashes into a Postgre database. The smart contract will serve as a proof and migrate the tokens.
 
 ## Backend
-The backend will be used to join needed data(amount of tokens, merkle tree leaf index and an array of intermediary hashes) from provided user ethereum address, AE address and signature(signed AE address). With this data, backend would create contract call tx, signed it with internal wallet and broadcasted it. If smart contract accept(verified) current request would transfer tokens to provided AE address, emit event and would return number of transfer. After that backend would notify backendless service for current transfer and user would not be able to transfer it again.
+The backend will be used to join needed data(amount of tokens, merkle tree leaf index and an array of intermediary hashes) from provided user ethereum address, AE address and signature(signed AE address). With this data, backend would create contract call tx, sign it with internal wallet and broadcast it. If smart contract accepts(verifies) current request would transfer tokens to provided AE address, emit event and would return number of transfer. After that backend would notify backendless service for current transfer and user would not be able to transfer it again.
 
 ### Installation
 What you should have installed 
@@ -132,7 +132,7 @@ response:
 ```
 
 
-`/validate` - POST validate is provided data can generate same merkle root hash. Should pass ethereum address, amount of tokens, leaf index and an array of intermediary hashes. Returns is exists
+`/validate` - POST validate is provided data can generate same merkle root hash. Should pass ethereum address, amount of tokens, leaf index and an array of intermediary hashes. Returns object with boolean property ‘exists’ which validates if the request is valid or not.
 ```
 request body:
 {
