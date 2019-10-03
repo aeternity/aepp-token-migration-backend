@@ -20,13 +20,9 @@ func main() {
 
 	contractSource := appUtils.GetContractSource(envConfig.ContractRawUrl)
 
-	// TODO: deleted me after development
-	// contractSource := appUtils.GetContractSource("")
-
 	tree := db.LoadMerkleTree(memory.NewMerkleTree(), envConfig.DbConnectionStr)
 
 	// log merkle tree nodes and leafs hashes
-	// fmt.Println(tree)
 	fmt.Printf("root hash: %s\n", tree.Root())
 
 	router := chi.NewRouter()
