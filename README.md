@@ -21,7 +21,12 @@ What you should have installed
  - local postgresql(https://www.postgresql.org/download/) or connect to remote one
 
 clone this repo into `$GOPATH/go/src`
-in project root directory `go get -u`
+in project root directory `go get`
+// windows users: if you get this error: '"gcc": executable file not found in %PATH%'
+// download and install: 'TDM-GCC' is a compiler suite for Windows. http://tdm-gcc.tdragon.net/download
+// then repeat command `go get` or `go get -u`
+
+
 set the environment variables in an .env file. You can see example in the .env_example file
 ```
 // .env_example
@@ -198,13 +203,22 @@ response:
 
 ## Import token owners (db table backup)
 
-
+// mac users
 1. install brew (https://brew.sh/) `if you have ‘psql’ as env variable skip this step`
 2. insttall ‘libpq' `if you have ‘psql’ as env variable skip this step`
 ```
     brew install libpq
     brew link --force libpq
 ```
+// windows users
+// if 'psql' is not recognized in 'CMD', you should manualy set environment path  
+- 'THIS PS' right click -> Properties 
+- 'Advanced system settings'
+- select 'Advanced' tab ->'Environment Variables'
+- go to 'System variables' and select/click 'Path' -> EDIT
+- 'NEW' -> type/paste your path to PostgreSQL -> 'C:\Program Files\PostgreSQL\12\bin'
+- close current CMD and reopen it.
+
 
 3. Create database. `If you want to use your own database skip this step`
 ```
