@@ -233,4 +233,51 @@ response:
 
 P.S.: backup script should try to set "usage” rights to 'cloudsqlimportexport’ user, but this user would not exists(almost sure) in your DB and you will see error messages. Table would be imported successfullly.
 
+### linux users - how to install postgreSQL on ubuntu - https://tecadmin.net/install-postgresql-server-on-ubuntu/
+1. sudo apt-get install wget ca-certificates
+2. wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+3. sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" >> /etc/apt/sources.list.d/pgdg.list'
+4. sudo apt-get update
+5. sudo apt-get install postgresql postgresql-contrib
+5. go to '/etc/postgresql/11/main/postgresql.conf' and uncomment this line '#listen_addresses = 'localhost'     # what IP address(es) to listen on;'
+ - Success. You can now start the database server using:
+```
+    pg_ctlcluster 11 main start
+```
+6. pgAdmin4 instalation https://linoxide.com/linux-how-to/how-install-pgadmin4-ubuntu/
+    - sudo apt update -y && sudo apt upgrade -y
+    - sudo apt-get install pgadmin4 pgadmin4-apache2
+        -- During this setup, you will be prompted for an email address. Provide your preferred email address(username)
+        -- provide the password you are going to use during log in
+        -- do not forget to wrote down username and pass 
+        -- you can connect to PostgreSQL by browsing your server's IP address or domain name followed by the suffix /pgAdmin4  in the URL. (http://127.0.0.1/pgadmin4)
 
+
+7. Create database
+// if you try to connect through pgAdmin4 interface and an error is thrown for invalid password 
+// or you try to execute psql command `createdb -h localhost -p 5432 -U postgres test` and again password required or invalid 
+// change default password 
+```
+    sudo -u postgres psql template1
+    ALTER USER postgres with encrypted password 'your_password';
+```
+
+- After configuring the password, edit the file /etc/postgresql/11/main/pg_hba.conf to use MD5 authentication with the postgres user:
+```
+    local   all         postgres                          md5
+```
+
+- restart the PostgreSQL service to initialize the new configuration 
+```
+    sudo systemctl restart postgresql.service 
+```
+
+- create database
+```
+    createdb -h localhost -p 5432 -U postgres test
+```
+
+8. Restore database
+```
+    psql -U postgres -h 127.0.0.1 -p 5432 -d test -f ./BACKUP_FILE
+```
