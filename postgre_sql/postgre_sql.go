@@ -125,6 +125,7 @@ func LoadMerkleTree(tree types.FullMerkleTree, connStr string) *PostgresMerkleTr
 }
 
 func connectToDb(connStr string) *sql.DB {
+
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		panic("Could not connect to the database.\n Original error: " + err.Error())

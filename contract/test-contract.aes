@@ -27,21 +27,21 @@ payable contract TokenMigration =
     siblings - the siblings of the leaf, needed to calculate the root_hash,
     sig - the eth signature, which should contain the aeternity address as a message. 
     */
-    payable stateful entrypoint migrate(token_amount: int, ae_address: address, leaf_index: int, siblings: list(string), sig: bytes(65)) =
-        
-        let hashed_ae_address = String.sha3(Address.to_str(ae_address))
-
-        // By providing the hashed_ae_address to the ecrevocer we are sure that the eth_address is correct
-        let recovered_eth_address = get_signer(hashed_ae_address, sig)
-        let recovered_eth_address_string = switch (recovered_eth_address)
-                                            None => "empty"
-                                            Some(recovered) => String.concat("0X", Bytes.to_str(recovered))
-
-        require(!Map.member(recovered_eth_address_string, state.map_transfered_accounts), "This account has already transferred its tokens")
+    stateful entrypoint migrate(token_amount: int, ae_address: address, leaf_index: int, siblings: list(string), sig: bytes(65)) =
         require(Address.is_payable(ae_address), "Passed AE address is not payable")
 
-        let is_contained = contained_in_merkle_tree(recovered_eth_address_string, token_amount, leaf_index, siblings)
-        require(is_contained, "From provided data, cannot be generated same root")
+        let ae_address_str = Address.to_str(ae_address)
+        let unhashed_msg = String.concat("\x19Ethereum Signed Message:\n", String.concat(Int.to_str(String.length(ae_address_str)), ae_address_str))
+        let hashed_msg = String.sha3(unhashed_msg)
+
+        // By providing the hashed_ae_address to the ecrevocer we are sure that the eth_address is correct
+        let recovered_eth_address = get_signer(hashed_msg, sig)
+        let recovered_eth_address_string = switch (recovered_eth_address)
+                                            None => abort("Failed to recover address, bad signature")
+                                            Some(recovered) => String.concat("0X", Bytes.to_str(recovered))
+
+        require(!is_migrated(recovered_eth_address_string), "This account has already transferred its tokens")
+        require(contained_in_merkle_tree(recovered_eth_address_string, token_amount, leaf_index, siblings), "From provided data, cannot be generated same root")
 
         Chain.spend(ae_address, token_amount)
         put(state{migrations_count = state.migrations_count + 1})
@@ -55,12 +55,9 @@ payable contract TokenMigration =
     function get_signer(msg_hash: hash, sig: bytes(65)) =
         Crypto.ecrecover_secp256k1(msg_hash, sig)
 
-
-
     entrypoint contained_in_merkle_tree(eth_addr: string, token_amount: int, leaf_index: int, siblings: list(string) ) =
-        // concat data => eth_Addr:tokens => concatenated data
-        let leaf_data = String.concat(eth_addr, ":")
-        let leaf_data = String.concat(leaf_data, Int.to_str(token_amount))
+        // concat leaf_data => eth_Addr:tokens => concatenated data
+        let leaf_data = String.concat(eth_addr, String.concat(":", Int.to_str(token_amount)))
 
         // concatenated data -> hash
         let leaf_data_hashed = Bytes.to_str(String.sha3(leaf_data)) // hash -> str
@@ -77,14 +74,7 @@ payable contract TokenMigration =
                 let data = if (index mod 2 == 1) String.concat(el, root) else String.concat(root, el)
                 calculate_root(els, index / 2, Bytes.to_str(String.sha3(data)))
 
-    stateful entrypoint update_root(new_root: string) =
-        only_owner()
-        put(state{root_hash = new_root})
-
     entrypoint balance() = Contract.balance
     entrypoint root_hash() = state.root_hash
     entrypoint migrations_count() = state.migrations_count
     entrypoint is_migrated(eth_address: string) = Map.member(eth_address, state.map_transfered_accounts)
-
-    function only_owner() =
-        require(Call.caller == Contract.creator, "Owner require")
