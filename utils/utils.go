@@ -38,7 +38,7 @@ func LogRequest(req *http.Request, route string) {
 	logStr := fmt.Sprintf("IP: %v, Route: %s", ip, route)
 
 	log.Printf(logStr)
-	go writeLogToFile(logStr)
+	// go writeLogToFile(logStr)
 }
 
 func writeLogToFile(data string) {
@@ -67,7 +67,7 @@ func writeLogToFile(data string) {
 		seconds = fmt.Sprintf("0%v", seconds)
 	}
 
-	file.WriteString(fmt.Sprintln(fmt.Sprintf("%v:%v:%v:%d | ", hour, minutes, seconds, t.Nanosecond()), data))
+	//file.WriteString(fmt.Sprintln(fmt.Sprintf("%v:%v:%v:%d | ", hour, minutes, seconds, t.Nanosecond()), data))
 }
 
 // GetContractSource get contract source from the provided URL

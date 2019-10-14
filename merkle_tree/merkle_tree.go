@@ -1,11 +1,12 @@
-// Package editedtree implements merkle tree stored in the memory of the system
-package editedtree
+// Package merkletree implements merkle tree stored in the memory of the system
+package merkletree
 
 import (
 	"errors"
 	"fmt"
-	
+
 	"aepp-token-migration-backend/types"
+
 	"github.com/ethereum/go-ethereum/crypto"
 
 	"math"
@@ -66,7 +67,7 @@ func (tree *MerkleTree) resizeVertically() {
 func createParent(left, right *Node) *Node {
 
 	parentNode := &Node{
-		hash:  strings.ToUpper(crypto.Keccak256Hash([]byte(left.hash), []byte(right.hash)).Hex()[2:]),
+		hash:   strings.ToUpper(crypto.Keccak256Hash([]byte(left.hash), []byte(right.hash)).Hex()[2:]),
 		Parent: nil,
 		index:  right.index / 2, // Parent index is always the current node index divided by two
 	}
@@ -173,7 +174,7 @@ func (tree *MerkleTree) Add(data []byte) (index int, hash string) {
 	upperCaseHash := strings.ToUpper(h.Hex()[2:])
 
 	index = tree.Insert(upperCaseHash)
-	
+
 	return index, upperCaseHash
 }
 
@@ -196,7 +197,7 @@ func (tree *MerkleTree) Insert(hash string) (index int) {
 
 // RawInsert creates node out of the hash and pushes it into the tree without recalculating the tree
 // Returns the index of the leaf and the node
-func (tree *MerkleTree) RawInsert(hash string) (index int, insertedLeaf merkletree.Node) {
+func (tree *MerkleTree) RawInsert(hash string) (index int, insertedLeaf types.Node) {
 	index = len(tree.Nodes[0])
 
 	leaf := &Node{
@@ -260,7 +261,7 @@ func (tree *MerkleTree) ValidateExistence(original []byte, index int, intermedia
 	treeLeaf := tree.Nodes[0][index]
 
 	// if leafHash.Big().Cmp(treeLeaf.hash.Big()) != 0 {
-	if leafHash != treeLeaf.hash  {
+	if leafHash != treeLeaf.hash {
 		// fmt.Println("Error not equal Big")
 		return false, nil
 	}
