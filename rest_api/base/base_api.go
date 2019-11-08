@@ -318,6 +318,7 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		if tries >= maxTries - 1 {
 			log.Printf("[ERROR] SignBroadcastTransaction! %s\n==>> TX: %v\n", err, tx)
 			http.Error(w, http.StatusText(500), 500)
+			customNonce = 0
 			return
 		}
 
