@@ -256,8 +256,17 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 
 		compiler := aeternity.NewCompiler(envConfig.AECompilerURL, false)
 
+		
 		signature := data.Signature[2:]
-		signature = signature[len(signature)-2:] + signature[:len(signature)-2]
+
+		vValue := signature[len(signature)-2:]
+		if vValue == "00" || vValue == "27" {
+			vValue = "1b"
+		} else if vValue == "01" || vValue == "1c" {
+			vValue = "1c"
+		}
+			
+		signature = vValue + signature[:len(signature)-2]
 
 		callData, err := compiler.EncodeCalldata(
 			contractSource,
