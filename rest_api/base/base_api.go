@@ -262,7 +262,7 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		vValue := signature[len(signature)-2:]
 		if vValue == "00" || vValue == "27" {
 			vValue = "1b"
-		} else if vValue == "01" || vValue == "1c" {
+		} else if vValue == "01" || vValue == "28" {
 			vValue = "1c"
 		}
 			
