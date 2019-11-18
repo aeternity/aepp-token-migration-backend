@@ -487,18 +487,16 @@ func pushToBackendless(url string, userTkn string, table string, aeAddress strin
 	type backendlessData struct {
 		PubKey          string `json:"pubKey"`
 		From            string `json:"from"`
-		Value           int    `json:"value"`
+		Value           string    `json:"value"`
 		DeliveryPeriod  int    `json:"deliveryPeriod"`
 		Count           int    `json:"count"`
 		TransactionHash string `json:"transactionHash"`
 	}
 
-	tokens, _ := strconv.Atoi(transferredTokens)
-
 	requestData := &backendlessData{
 		PubKey:          aeAddress,       // ae address
 		From:            ethAddress,      // eth address
-		Value:           tokens,          // migrated tokens
+		Value:           transferredTokens,          // migrated tokens
 		DeliveryPeriod:  4,               // delivery phase ?!?!
 		Count:           migrationsCount, // migrations count
 		TransactionHash: txHash,          // tx hash
