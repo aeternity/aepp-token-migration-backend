@@ -499,7 +499,7 @@ func pushToBackendless(url string, userTkn string, table string, aeAddress strin
 		PubKey:          aeAddress,       // ae address
 		From:            ethAddress,      // eth address
 		Value:           tokens,          // migrated tokens
-		DeliveryPeriod:  3,               // delivery phase ?!?!
+		DeliveryPeriod:  4,               // delivery phase ?!?!
 		Count:           migrationsCount, // migrations count
 		TransactionHash: txHash,          // tx hash
 	}
