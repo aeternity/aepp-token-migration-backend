@@ -256,7 +256,7 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 
 		compiler := aeternity.NewCompiler(envConfig.AECompilerURL, false)
 
-		
+
 		signature := data.Signature[2:]
 
 		vValue := signature[len(signature)-2:]
@@ -265,7 +265,7 @@ func migrate(tree *postgre.PostgresMerkleTree, secretKey string, contractSource 
 		} else if vValue == "01" || vValue == "28" {
 			vValue = "1c"
 		}
-			
+
 		signature = vValue + signature[:len(signature)-2]
 
 		callData, err := compiler.EncodeCalldata(
@@ -373,7 +373,6 @@ func waitForTransaction(tree *postgre.PostgresMerkleTree, aeNode *aeternity.Node
 		}
 
 		tree.SetMigratedToSuccess(ethAddress, hash, aeAddress)
-		notifyBackendless(envConfig, aeAddress, ethAddress, transferredTokens, hash, migrationsCountAsInt)
 	} else if txInfo.CallInfo.ReturnType == "revert" {
 		response, err := compiler.DecodeCallResult("revert", txInfo.CallInfo.ReturnValue, "migrate", contractSource, envConfig.AEBackend)
 		if err != nil {

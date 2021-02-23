@@ -7,6 +7,7 @@ require (
 	github.com/OneOfOne/xxhash v1.2.5 // indirect
 	github.com/aeternity/aepp-sdk-go/v5 v5.1.2
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
+	github.com/btcsuite/btcd v0.21.0-beta // indirect
 	github.com/coreos/bbolt v1.3.3 // indirect
 	github.com/coreos/etcd v3.3.15+incompatible // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
@@ -50,7 +51,6 @@ require (
 	go.etcd.io/bbolt v1.3.3 // indirect
 	go.opencensus.io v0.22.1 // indirect
 	go.uber.org/multierr v1.2.0 // indirect
-	golang.org/x/crypto v0.0.0-20190926180335-cea2066c6411 // indirect
 	golang.org/x/exp v0.0.0-20190925190815-26a69ce95baf // indirect
 	golang.org/x/image v0.0.0-20190910094157-69e4b8554b2a // indirect
 	golang.org/x/mobile v0.0.0-20190923204409-d3ece3b6da5f // indirect
