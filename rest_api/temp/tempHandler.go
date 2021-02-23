@@ -12,15 +12,15 @@ import (
 	"github.com/go-chi/render"
 )
 
-// ResetMirgationStatus developer test function
-func ResetMirgationStatus(router chi.Router, tree *postgre.PostgresMerkleTree) chi.Router {
+// ResetMigrationStatus developer test function
+func ResetMigrationStatus(router chi.Router, tree *postgre.PostgresMerkleTree) chi.Router {
 
-	router.Get("/reset/{ethAddress}", resetMirgationStatus(tree))
+	router.Get("/reset/{ethAddress}", resetMigrationStatus(tree))
 
 	return router
 }
 
-func resetMirgationStatus(tree *postgre.PostgresMerkleTree) http.HandlerFunc {
+func resetMigrationStatus(tree *postgre.PostgresMerkleTree) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 
 		type res struct {

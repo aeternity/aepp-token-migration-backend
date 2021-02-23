@@ -40,6 +40,9 @@ const (
 	QuerySetMigratedToSuccess = `UPDATE public.token_migration
 	SET migrated = '1', migrate_tx_hash = $2, ae_address = $3
 	WHERE lower(eth_address) = lower($1);`
+	QueryImportMigratedToSuccess = `UPDATE public.token_migration
+	SET migrated = '1', migrate_tx_hash = $2, ae_address = $3
+	WHERE leaf_index = $1;`
 	QueryResetMigrationStatus = `UPDATE public.token_migration
 	SET migrated = '0', migrate_tx_hash = '', ae_address = ''
 	WHERE lower(eth_address) = lower($1);`
@@ -85,6 +88,22 @@ func (tree *PostgresMerkleTree) SetMigratedToSuccess(ethAddress string, txHash s
 	_, err := tree.db.Exec(QuerySetMigratedToSuccess, ethAddress, txHash, aeAddress)
 	if err != nil {
 		log.Printf("[SetMigratedToSuccess] ", err.Error())
+	}
+
+	tree.mutex.Unlock()
+}
+
+// SetMigratedToSuccess when tx is mined, migrated will be set to TRUE
+func (tree *PostgresMerkleTree) ImportMigratedToSuccess(leafIndex int, txHash string, aeAddress string) {
+	if leafIndex == 0 || txHash == "" || aeAddress == "" {
+		log.Printf("[ImportMigratedToSuccess] Invalid attempt to set migration status! eth address: %s, tx hash: %s, ae address: %s", leafIndex, txHash, aeAddress)
+		return
+	}
+
+	tree.mutex.Lock()
+	_, err := tree.db.Exec(QueryImportMigratedToSuccess, leafIndex, txHash, aeAddress)
+	if err != nil {
+		log.Printf("[ImportMigratedToSuccess] ", err.Error())
 	}
 
 	tree.mutex.Unlock()

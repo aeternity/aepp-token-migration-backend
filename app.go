@@ -11,6 +11,7 @@ import (
 	db "aepp-token-migration-backend/postgre_sql"
 	baseapi "aepp-token-migration-backend/rest_api/base"
 	"aepp-token-migration-backend/rest_api/owner"
+	"aepp-token-migration-backend/rest_api/import"
 	"aepp-token-migration-backend/rest_api/validator"
 	appUtils "aepp-token-migration-backend/utils"
 )
@@ -32,6 +33,7 @@ func main() {
 	baseapi.MerkleTreeStatus(router, tree.FullMerkleTree)
 	baseapi.MerkleTreeHashes(router, tree.FullMerkleTree)
 	validator.MerkleTreeValidate(router, tree.FullMerkleTree)
+	importapi.ImportMigrationStatus(router, tree)
 
 	// add token owner to DB with given params: eht address, token amount
 	owner.AddTokenOwner(router, tree, envConfig.BearerAuthToken)
