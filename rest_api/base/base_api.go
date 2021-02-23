@@ -359,16 +359,9 @@ func waitForTransaction(tree *postgre.PostgresMerkleTree, aeNode *aeternity.Node
 	} else if txInfo.CallInfo.ReturnType == "ok" {
 
 		log.Println("[INFO] [SUCCESS] Nonce", txInfo.CallInfo.CallerNonce, "TX Hash", hash)
-		migrationsCount, err := compiler.DecodeCallResult("ok", txInfo.CallInfo.ReturnValue, "migrate", contractSource, envConfig.AEBackend)
+		nil, err := compiler.DecodeCallResult("ok", txInfo.CallInfo.ReturnValue, "migrate", contractSource, envConfig.AEBackend)
 		if err != nil {
 			log.Println("Decode Call Result", err)
-			return "Error", errors.New("Error")
-		}
-
-		temp := fmt.Sprint(migrationsCount)
-		migrationsCountAsInt, err := strconv.Atoi(temp) // temp.(int)
-		if err != nil {
-			log.Println("Cannot parse migrations count:", migrationsCount)
 			return "Error", errors.New("Error")
 		}
 
